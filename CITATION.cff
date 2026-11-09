@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use varwalk, please cite it as below."
+title: varwalk
+version: 0.1.0
+abstract: >-
+  Variable crosswalks for water and environmental data: units, quantity
+  kinds, species, basis and counting, with each source's own names and
+  units kept verbatim.
+authors:
+  - family-names: Aufdenkampe
+    given-names: Anthony
+license: MIT
+repository-code: "https://github.com/LimnoTech/varwalk"

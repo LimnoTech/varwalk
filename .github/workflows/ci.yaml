@@ -1,0 +1,175 @@
+name: CI
+
+# Which runners a commit gets depends on why the run started:
+#
+# - `push`, any branch: Ubuntu only, for the latest commit pushed to the
+#   branch (a newer push cancels a run still in progress).
+# - `pull_request` into `main`: Ubuntu and Windows, for the head of a PR
+#   before it merges. PRs into other branches get no `pull_request` run:
+#   the push run already tested the same commit.
+# - `workflow_dispatch`: from the Actions tab, on any branch, with an
+#   `os` choice: `windows`, `macos` or `both` (the default). The `test`
+#   job runs no Ubuntu and there is no typecheck: the push run already
+#   did both for the same commit. Run it on a branch that changes
+#   dependencies, the lock or file I/O, and run `both` on `main` after a
+#   merge that changes `pixi.lock`, to seed the caches.
+#
+# The `pandas2` job runs the tests against the oldest pandas the package
+# supports (2.3), on Ubuntu, on every push and every PR.
+#
+# Only `main` writes the pixi cache (`cache-write` in each setup-pixi
+# step): a cache written on a branch or on a PR's merge ref serves no
+# other ref. `main` writes its Windows and macOS caches only through a
+# manual run, because a push to `main` runs Ubuntu only.
+#
+# This repository is public, so a fork's PR runs this file. It holds no
+# secrets and the token is read-only (`permissions` below). Never add
+# the pull-request-target trigger: it runs with write access and secrets
+# against a fork's code.
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "Operating system to test (Ubuntu runs on every push)"
+        type: choice
+        options:
+          - windows
+          - macos
+          - both
+        default: both
+
+permissions:
+  contents: read
+
+concurrency:
+  # `inputs.os` is empty except on a manual run, so a `windows` and a
+  # `macos` run started on one branch do not cancel each other.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.os }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Ubuntu alone on push; Ubuntu and Windows for a PR into `main`;
+        # for a manual run the `os` input picks Windows, macOS or both.
+        os: >-
+          ${{ fromJSON(
+          github.event_name == 'push' && '["ubuntu-latest"]'
+          || github.event_name == 'pull_request' && '["ubuntu-latest", "windows-latest"]'
+          || inputs.os == 'windows' && '["windows-latest"]'
+          || inputs.os == 'macos' && '["macos-latest"]'
+          || '["macos-latest", "windows-latest"]') }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # hatch-vcs derives the version from git history, so a shallow
+          # clone would give a bogus version and break the import test.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0
+        with:
+          # The pixi the lock was made with, inside pyproject.toml's
+          # requires-pixi (tests/test_package_section.py checks it).
+          pixi-version: v0.76.0
+          manifest-path: pyproject.toml
+          # The lean environment: core + dev, no Jupyter stack. The
+          # input is `environments`, plural: `environment` is silently
+          # ignored and installs the default environment.
+          environments: ci
+          # Fail if pixi.lock is out of date with pyproject.toml.
+          locked: true
+          cache: true
+          # Written on `main` only (see the header comment).
+          cache-write: ${{ github.ref_name == 'main' }}
+
+      # Steps are kept separate so a failure names the tool that failed.
+      - name: Tests
+        # PYTHONFAULTHANDLER prints a native crash and the Python stack
+        # it happened in, even one during interpreter shutdown. `exit
+        # $LASTEXITCODE` makes a failed test command fail the step in
+        # PowerShell.
+        env:
+          PYTHONFAULTHANDLER: "1"
+        run: |
+          pixi run -e ci test
+          exit $LASTEXITCODE
+
+      - name: Lint
+        run: pixi run -e ci lint
+
+      - name: Format
+        run: pixi run -e ci ruff format --check src tests scripts
+
+  # The oldest pandas the package supports, in its own environment.
+  pandas2:
+    name: pandas2
+    # Push and PR only: a manual run tests the other operating systems.
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0
+        with:
+          pixi-version: v0.76.0
+          manifest-path: pyproject.toml
+          environments: pandas2
+          locked: true
+          cache: true
+          cache-write: ${{ github.ref_name == 'main' }}
+
+      - name: Tests
+        run: pixi run -e pandas2 test
+
+  # Type checking runs in `default`, on one runner only: pyrefly is
+  # static, so a multi-OS matrix buys nothing.
+  typecheck:
+    name: typecheck
+    # A manual run tests the other operating systems.
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0
+        with:
+          pixi-version: v0.76.0
+          manifest-path: pyproject.toml
+          environments: default
+          locked: true
+          cache: true
+          cache-write: ${{ github.ref_name == 'main' }}
+
+      - name: Type check
+        run: pixi run typecheck

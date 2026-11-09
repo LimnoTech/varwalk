@@ -1,0 +1,218 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "varwalk"
+dynamic = ["version"]
+description = "Variable crosswalks for water and environmental data: units, quantity kinds, species, basis and counting, with each source's own names and units kept verbatim."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+# 3.12 stays supported past SPEC 0's 2026-10 drop, because the first
+# users run it (README). No ceiling: a library never caps Python.
+requires-python = ">=3.12"
+authors = [{ name = "Anthony Aufdenkampe" }]
+maintainers = [{ name = "Anthony Aufdenkampe" }]
+keywords = [
+  "units",
+  "crosswalk",
+  "variables",
+  "hydrology",
+  "water quality",
+  "I-ADOPT",
+  "ODM2",
+  "xarray",
+  "pandas",
+  "pint",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Hydrology",
+  "Typing :: Typed",
+]
+
+# The one runtime list, in PyPI names: what src/varwalk imports.
+# pixi-build-python maps it to conda names for the package's record.
+# The QUDT subset builder's rdflib is the `qudt` pixi feature below,
+# not a runtime requirement. No family package.
+dependencies = [
+  "cf-units",
+  "cf-xarray",
+  "molmass",
+  "numpy",
+  "pandas>=2.3",
+  "pint>=0.26",
+  "pint-xarray",
+  "pyarrow",  # beside pandas; reads the QUDT Parquet tables
+  "xarray",
+]
+
+[project.urls]
+Homepage = "https://github.com/LimnoTech/varwalk"
+Source = "https://github.com/LimnoTech/varwalk"
+Issues = "https://github.com/LimnoTech/varwalk/issues"
+Changelog = "https://github.com/LimnoTech/varwalk/blob/main/CHANGELOG.md"
+
+# ----------------------------------------------------------------------
+# Build
+# ----------------------------------------------------------------------
+
+[tool.hatch.version]
+source = "vcs"
+# Used only when git metadata is missing (a GitHub source ZIP).
+fallback-version = "0.0.0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/varwalk/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/varwalk"]
+
+# ----------------------------------------------------------------------
+# Pixi workspace
+# ----------------------------------------------------------------------
+
+[tool.pixi.workspace]
+channels = ["conda-forge", "nodefaults"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
+# pixi-build is a preview, so pixi is pinned to the version the package
+# section was probed on; CI's setup-pixi steps pin the same version
+# (tests/test_package_section.py).
+preview = ["pixi-build"]
+requires-pixi = ">=0.76,<0.77"
+
+# Self-install as a pixi-build source package, in the implicit default
+# feature so every environment gets it.
+[tool.pixi.dependencies]
+varwalk = { path = "." }
+
+# varwalk as a pixi-build source package: a consumer that names it under
+# a conda dependencies table gets its record in its own solve. With
+# ignore-pypi-mapping = false, the record is written from
+# [project.dependencies] plus the run-dependencies below.
+# tests/test_package_section.py checks the record pixi locked.
+[tool.pixi.package]
+name = "varwalk"
+# The last release, bumped beside CHANGELOG.md in each release-preparation
+# change. __version__ still comes from hatch-vcs.
+version = "0.1.0"
+
+[tool.pixi.package.build]
+backend = { name = "pixi-build-python", version = "*" }
+
+[tool.pixi.package.build.config]
+ignore-pypi-mapping = false
+
+[tool.pixi.package.host-dependencies]
+hatchling = "*"
+hatch-vcs = "*"
+python = "3.12.*"
+
+# Only what [project.dependencies] cannot say. The mapping turns
+# `pyarrow` into pyarrow-core, which lacks Parquet, so the full
+# package is named here.
+[tool.pixi.package.run-dependencies]
+pyarrow = "*"
+
+# Only the environment's python: the runtime list is
+# [project.dependencies], through the package.
+[tool.pixi.feature.core.dependencies]
+python = "3.12.*"
+
+# The builder of the shipped QUDT subset (scripts/build_qudt_subset.py).
+[tool.pixi.feature.qudt.dependencies]
+rdflib = "*"
+
+[tool.pixi.feature.jupyter.dependencies]
+jupyterlab = "*"
+jupytext = "*"
+
+[tool.pixi.feature.dev.dependencies]
+hatch-vcs = "*"  # Task: a test builds the wheel
+hatchling = "*"
+pre-commit = "*"
+pyrefly = "*"
+pytest = ">=9"
+pytest-cov = "*"
+pyyaml = "*"  # tests/test_package_section.py reads pixi.lock
+ruff = "*"
+# conda-forge's libarrow 26.0.1 osx-arm64 builds (_3, _4) link
+# Homebrew's lz4 by absolute path, so pyarrow fails to import on a Mac
+# without it; 26.0.0 links @rpath. This keeps 26.0.1 out of varwalk's
+# own environments only (a feature, never the package's
+# run-constraints), on every platform: pixi 0.76's package section has
+# no per-platform tables (checked 2026-11-09). Revisit at the next
+# libarrow release (added 2026-11-09): on osx-arm64,
+# `pixi exec -s libarrow==<new> -- sh -c 'otool -L "$CONDA_PREFIX"/lib/libarrow.*.dylib | grep lz4'`;
+# `@rpath/liblz4` means drop this line and re-lock.
+libarrow = "!=26.0.1"
+
+# The oldest pandas the package supports, in its own solve.
+[tool.pixi.feature.pandas2.dependencies]
+pandas = ">=2.3,<3"
+
+[tool.pixi.environments]
+default = { features = ["core", "qudt", "jupyter", "dev"], solve-group = "default" }
+ci = { features = ["core", "dev"], solve-group = "default" }
+pandas2 = { features = ["core", "dev", "pandas2"] }
+
+[tool.pixi.tasks]
+test = "pytest"
+lint = "ruff check src tests scripts"
+format = "ruff format src tests scripts"
+typecheck = "pyrefly check src/varwalk"
+build-qudt = "python scripts/build_qudt_subset.py"
+
+# ----------------------------------------------------------------------
+# Tooling
+# ----------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 88
+force-exclude = true
+
+[tool.ruff.lint]
+# W505 holds docstrings and comments to max-doc-length.
+select = ["E", "F", "I", "UP", "B", "W505"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 72
+
+[tool.pytest.ini_options]
+minversion = "9"
+testpaths = ["tests"]
+xfail_strict = true
+log_level = "INFO"
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+# Every warning fails a test unless the test expects it.
+filterwarnings = ["error"]
+
+[tool.pyrefly]
+project-includes = ["src/varwalk"]
+python-version = "3.12"
+
+[tool.repo-review]
+ignore = [
+  # The pixi `dev` feature is the dev group; a [dependency-groups]
+  # table would be a second list, installed from PyPI.
+  "PP006",
+  # Pyrefly is the type checker, not mypy.
+  "MY101",
+  "PC140",
+  # Markdown is checked by markdownlint-cli2, a linter, not a formatter.
+  "PC180",
+  # pre-commit.ci is not used.
+  "PC901",
+  "PC902",
+  "PC903",
+]
