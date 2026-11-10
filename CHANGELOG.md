@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-09)
 
 First version of varwalk, extracted in 2026 from the units layer of
 LimnoTech's internal water-data-engine package. A pre-release: the
