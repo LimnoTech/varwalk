@@ -29,7 +29,6 @@ keywords = [
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
@@ -200,6 +199,11 @@ filterwarnings = ["error"]
 [tool.pyrefly]
 project-includes = ["src/varwalk"]
 python-version = "3.12"
+
+[tool.codespell]
+skip = "pixi.lock,src/varwalk/data/qudt/*.csv"
+# ANC: acid-neutralizing capacity; Hart: a unit name.
+ignore-words-list = "ANC,Hart"
 
 [tool.repo-review]
 ignore = [

@@ -15,17 +15,25 @@ repos:
         args: [--fix, --show-fixes]
       - id: ruff-format
 
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.3
     hooks:
       - id: codespell
+        additional_dependencies: [tomli]  # reads pyproject.toml on Python < 3.11
 
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.24.0
     hooks:
       - id: markdownlint-cli2
 
-  - repo: https://github.com/woodruffw/zizmor-pre-commit
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.32.0
     hooks:
       - id: zizmor

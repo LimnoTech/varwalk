@@ -200,7 +200,7 @@ def parse_unit(unit: Any, registry: pint.UnitRegistry) -> Any:
     Unit must come from the same registry. A Quantity is refused, even
     from the same registry: it carries a magnitude, and a caller passing
     one where a unit belongs has made a mistake. Raises ``ValueError``
-    for an unparseable string (including those pint rejects with a
+    for an unparsable string (including those pint rejects with a
     ``TypeError``, such as ``kg-N/ha``), a Quantity, or a foreign Unit.
     """
     import pint

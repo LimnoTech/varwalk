@@ -236,7 +236,7 @@ def test_mass_to_amount_is_never_sent_to_convert_units():
         lambda d: convert_amount(d, {"NO3": "not a unit"}),
         lambda d: convert_amount(d, {"NO3": "m"}),
     ],
-    ids=["basis", "unparseable", "dimension"],
+    ids=["basis", "unparsable", "dimension"],
 )
 def test_every_refusal_names_the_variable(call):
     with pytest.raises(ValueError, match="'NO3'"):
