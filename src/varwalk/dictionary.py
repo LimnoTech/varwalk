@@ -250,8 +250,7 @@ def require_kind(name: str, found: Mapping[str, Any], operation: str) -> str:
     if kind is None:
         raise ValueError(
             f"{name!r} has no quantity_kind; annotate it (varwalk.annotate.annotate) "
-            f"before "
-            f"{operation}"
+            f"before {operation}"
         )
     if "units" not in found:
         raise ValueError(f"{name!r} has no units")

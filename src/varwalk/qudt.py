@@ -68,8 +68,7 @@ def _read(stem: str) -> pd.DataFrame:
     if not path.is_file():
         raise FileNotFoundError(
             f"QUDT subset file missing: {path}. It ships as package data; rebuild it "
-            f"with "
-            "`pixi run build-qudt`."
+            "with `pixi run build-qudt`."
         )
     return pd.read_parquet(path).set_index("name")
 
@@ -116,8 +115,7 @@ def local_kinds_table() -> pd.DataFrame:
         raise ValueError(
             f"local quantity kind(s) {clash} in {LOCAL_KINDS_PATH.name} are also QUDT "
             "quantity kinds in the shipped subset: QUDT now defines them, so remove "
-            "them from "
-            "the local vocabulary and use QUDT's"
+            "them from the local vocabulary and use QUDT's"
         )
     malformed = sorted(table["name"][~table["dimension_vector"].str.match(_VECTOR)])
     if malformed:
@@ -179,8 +177,7 @@ def iri(name: str, kind: Literal["unit", "quantity_kind"]) -> str:
     if kind == "quantity_kind" and is_local_kind(name):
         raise ValueError(
             f"{name!r} is a local quantity kind ({LOCAL_KINDS_PATH.name}), not a QUDT "
-            f"one, "
-            "so it has no QUDT IRI"
+            "one, so it has no QUDT IRI"
         )
     namespace = {"unit": UNIT_NAMESPACE, "quantity_kind": QUANTITY_KIND_NAMESPACE}[kind]
     return namespace + name

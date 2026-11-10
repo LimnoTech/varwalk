@@ -116,10 +116,8 @@ def _refuse_prefixed_years(text: str) -> None:
             )
             raise ValueError(
                 f"{text!r}: {token!r} is a prefixed year, which UDUNITS reads as "
-                f"{reading}, so no "
-                "string means the same to every CF tool -- multiply by 365.25 (or the "
-                "setting's "
-                "days) and write days instead"
+                f"{reading}, so no string means the same to every CF tool -- multiply "
+                "by 365.25 (or the setting's days) and write days instead"
             )
 
 
@@ -159,8 +157,7 @@ def make_registry(year: str = "julian") -> pint.UnitRegistry:
         if _ARE_OR_YEAR.search(text):
             raise ValueError(
                 f"{text!r}: a standalone 'a' is ambiguous -- pint reads it as a year, "
-                f"UDUNITS "
-                "as the are (100 m2); write 'year' or 'are'"
+                "UDUNITS as the are (100 m2); write 'year' or 'are'"
             )
         _refuse_prefixed_years(text)
         return _MONTH_IN.sub(month_unit, _YEAR_IN.sub(year_unit, text))
@@ -220,8 +217,7 @@ def parse_unit(unit: Any, registry: pint.UnitRegistry) -> Any:
     if getattr(unit, "_REGISTRY", None) is not registry:
         raise ValueError(
             f"{unit!r} belongs to a different registry, whose year may differ; pass a "
-            f"string "
-            "or a Unit from the same registry"
+            "string or a Unit from the same registry"
         )
     return unit
 
@@ -256,8 +252,7 @@ def format_units(unit: Any, registry: pint.UnitRegistry | None = None) -> str:
             return _WRITTEN[token]
         raise ValueError(
             f"{text!r}: a per-month unit has no UDUNITS name under the {setting!r} "
-            f"year; "
-            "express it per day, or use rate_to_amount for monthly totals"
+            "year; express it per day, or use rate_to_amount for monthly totals"
         )
 
     written = _TIME_OUT.sub(_swap, text)

@@ -66,8 +66,7 @@ def basis_count(species: str, basis: str) -> int:
             if element not in of_species:
                 raise ValueError(
                     f"species {species!r} contains no {element}, so it cannot be "
-                    f"counted as "
-                    f"{basis!r}"
+                    f"counted as {basis!r}"
                 )
             return of_species[element]
     raise ValueError(

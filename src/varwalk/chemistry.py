@@ -24,6 +24,7 @@ from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
+from ._formula import basis_count, charge, formula, molar_mass
 from .dictionary import (
     COUNTINGS,
     HISTORY_MARK,
@@ -48,8 +49,12 @@ if TYPE_CHECKING:
 __all__ = [
     "AMOUNT_KINDS",
     "EQUIVALENT_KINDS",  # noqa: F822  (module __getattr__: derived from QUDT on first use)
+    "basis_count",
+    "charge",
     "convert_amount",
     "convert_basis",
+    "formula",
+    "molar_mass",
 ]
 
 #: One quantity counted as a mass and as an amount of substance, per
@@ -116,8 +121,7 @@ def _chemistry(name: str, found: Mapping[str, Any]) -> tuple[str, str, str, str]
     if counting is None:
         raise ValueError(
             f"{name!r} has no counting; a chemical conversion needs to know whether it "
-            f"counts "
-            f"{', '.join(COUNTINGS)}"
+            f"counts {', '.join(COUNTINGS)}"
         )
     return kind, found["species"], found["basis"], counting
 
@@ -169,7 +173,6 @@ def convert_basis(
     ``mark`` opens each ``history`` line this writes, after its
     timestamp.
     """
-    from ._formula import basis_count, molar_mass
     from .annotate import validate_annotations
     from .registry import get_registry, year_setting
 
@@ -205,8 +208,7 @@ def convert_basis(
         }
         history.append(
             f"convert_basis: {name} ({species}) as {basis} -> as {new_basis}, "
-            f"x{factor:.6g} "
-            f"(year setting: {setting})"
+            f"x{factor:.6g} (year setting: {setting})"
         )
     out = updated(data, changes, values=values, history=history, now=now, mark=mark)
     validate_annotations(out, registry=registry)
@@ -223,8 +225,7 @@ def _paired_kind(name: str, kind: str, counting: str) -> str:
     known = sorted({row[have] for row in AMOUNT_KINDS})
     raise ValueError(
         f"{name!r} is {kind} counted as {counting}; convert_amount moves mass <-> "
-        f"amount for "
-        f"{known}"
+        f"amount for {known}"
     )
 
 
@@ -269,7 +270,6 @@ def convert_amount(
     timestamp.
     """
     from . import qudt
-    from ._formula import basis_count, charge, molar_mass
     from .annotate import validate_annotations
     from .registry import format_units, get_registry, parse_unit, year_setting
     from .validate import dimension_vector
@@ -291,13 +291,13 @@ def convert_amount(
         if target_role == role == "equivalents":
             raise ValueError(
                 f"{name!r} is already counted as equivalents; rescale it with "
-                f"convert_units, "
-                f"writing the target in moles (for example {found['units']!r}), not eq"
+                "convert_units, writing the target in moles (for example "
+                f"{found['units']!r}), not eq"
             )
         if target_role == role:
             raise ValueError(
                 f"{name!r} is already counted as {role}; change its scale with "
-                f"convert_units"
+                "convert_units"
             )
         dimensional = _DIMENSIONAL_KIND.get(kind, kind)
         if "mass" in (role, target_role):
@@ -314,8 +314,7 @@ def convert_amount(
             raise ValueError(
                 f"{name!r}: the {target_role} form of {kind} would be {target_kind} "
                 f"({expected}), which does not match the dimensions of the target "
-                f"{target!r} "
-                f"({actual})"
+                f"{target!r} ({actual})"
             )
         with _naming(name):
             z = abs(charge(species))
@@ -354,10 +353,8 @@ def convert_amount(
         }
         history.append(
             f"convert_amount: {name} {found['units']!r} ({kind}, {role}) -> "
-            f"{written!r} "
-            f"({target_kind}, {target_role}) as {basis}, species {species}, "
-            f"x{factor:.6g} "
-            f"(year setting: {setting})"
+            f"{written!r} ({target_kind}, {target_role}) as {basis}, "
+            f"species {species}, x{factor:.6g} (year setting: {setting})"
         )
     out = updated(data, changes, values=values, history=history, now=now, mark=mark)
     validate_annotations(out, registry=registry)

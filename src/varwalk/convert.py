@@ -155,8 +155,8 @@ def convert_units(
             )
             raise ValueError(
                 f"{name!r} is {counted}: target {target!r}: counting it as equivalents "
-                f"needs "
-                f"the species' charge: use chemistry.convert_amount with {target!r}"
+                "needs the species' charge: use chemistry.convert_amount with "
+                f"{target!r}"
             )
         try:
             kind_row = qudt.quantity_kind(kind)
@@ -167,15 +167,13 @@ def convert_units(
         if have != expected:
             raise ValueError(
                 f"{name!r} is {kind} ({expected}), but its units {found['units']!r} "
-                f"have dimensions {have}; fix them with "
-                "varwalk.annotate.annotate first"
+                f"have dimensions {have}; fix them with varwalk.annotate.annotate first"
             )
         actual = dimension_vector(wanted, registry)
         if actual != expected:
             raise ValueError(
                 f"{name!r} is {kind} ({expected}), but {target!r} has dimensions "
-                f"{actual}; "
-                "mass <-> amount needs a molar mass and belongs to "
+                f"{actual}; mass <-> amount needs a molar mass and belongs to "
                 "chemistry.convert_amount"
             )
         if expected.endswith("D1"):  # dimensionless: the numerator says what it counts
@@ -185,12 +183,10 @@ def convert_units(
             if had and asked and had != asked:
                 raise ValueError(
                     f"{name!r} is {kind} in {found['units']!r}, a fraction counting "
-                    f"{had}, but "
-                    f"target {target!r} counts {asked}: a mass fraction and a mole "
-                    f"fraction "
-                    "differ by the molar masses of both the substance and its matrix, "
-                    "which "
-                    "this layer does not have, so the conversion is refused"
+                    f"{had}, but target {target!r} counts {asked}: a mass fraction and "
+                    "a mole fraction differ by the molar masses of both the substance "
+                    "and its matrix, which this layer does not have, so the conversion "
+                    "is refused"
                 )
         written = format_units(wanted, registry)
         values[name] = _converted(data, name, source, wanted, registry)
@@ -457,29 +453,25 @@ def _period_seconds(data: Any, period: str | tuple[str, str], freq: str | None) 
             if not is_dataset(data):
                 raise ValueError(
                     f"cannot determine the period from the table's {period!r} column, "
-                    f"which "
-                    "repeats per site: give freq= (such as 'MS') or period=(start, end)"
+                    "which repeats per site: give freq= (such as 'MS') or "
+                    "period=(start, end)"
                 )
             freq = xr.infer_freq(starts) if len(starts) >= 3 else None
             if freq is None:
                 raise ValueError(
-                    f"cannot determine the period length from {period!r}: give freq= "
-                    f"or "
-                    "period=(start, end)"
+                    f"cannot determine the period length from {period!r}: give "
+                    "freq= or period=(start, end)"
                 )
         if not _START_ANCHORED.match(freq):
             if inferred:
                 raise ValueError(
                     f"inferred freq {freq!r} does not label each period by its start; "
-                    f"pass "
-                    "freq= (a start-anchored alias such as 'MS', 'YS', 'QS', 'D' or "
-                    "'h') or "
-                    "period=(start, end)"
+                    "pass freq= (a start-anchored alias such as 'MS', 'YS', 'QS', 'D' "
+                    "or 'h') or period=(start, end)"
                 )
             raise ValueError(
                 f"freq {freq!r} does not label each period by its start; use a "
-                f"start-anchored "
-                "alias such as 'MS', 'YS', 'QS', 'D' or 'h'"
+                "start-anchored alias such as 'MS', 'YS', 'QS', 'D' or 'h'"
             )
         _require_on_boundary(starts, freq, how=f"{period} + 1 {freq}")
         ends = starts.shift(1, freq)

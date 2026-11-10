@@ -200,8 +200,8 @@ def validate_variables_df(
         )
     if list(variables_df.columns) != list(_ALL_COLUMNS):
         raise ValueError(
-            f"data-dictionary columns must be {list(_ALL_COLUMNS)}, "
-            f"got {list(variables_df.columns)}"
+            f"data-dictionary columns must be {list(_ALL_COLUMNS)}, got "
+            f"{list(variables_df.columns)}"
         )
     for name, aliases in variables_df["aliases"].items():
         if not isinstance(aliases, Mapping) or not all(
@@ -224,8 +224,7 @@ def validate_variables_df(
         elif source not in crosswalk_sources:
             raise ValueError(
                 f"crosswalk_source for {name!r} must be one of "
-                f"{sorted(crosswalk_sources)}; "
-                f"got {source!r}"
+                f"{sorted(crosswalk_sources)}; got {source!r}"
             )
 
 

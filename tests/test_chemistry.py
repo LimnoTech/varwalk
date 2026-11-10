@@ -702,3 +702,11 @@ def test_every_equivalents_kind_has_a_dimensional_kind_of_its_dimensions():
     for kind, dimensional in chemistry._DIMENSIONAL_KIND.items():
         vector = qudt.quantity_kind(kind)["dimension_vector"]
         assert qudt.quantity_kind(dimensional)["dimension_vector"] == vector
+
+
+def test_formula_helpers_are_public_through_chemistry():
+    from varwalk import _formula, chemistry
+
+    for name in ("formula", "molar_mass", "charge", "basis_count"):
+        assert getattr(chemistry, name) is getattr(_formula, name)
+        assert name in chemistry.__all__

@@ -91,8 +91,8 @@ def _equivalent_hint(unit: pint.Unit, registry: pint.UnitRegistry) -> str:
 
     in_moles = format_units(as_moles(unit), registry)
     return (
-        "UDUNITS has no eq: write equivalents in mol with counting "
-        f"'equivalents' ({in_moles!r})"
+        "UDUNITS has no eq: write equivalents in mol with counting 'equivalents' "
+        f"({in_moles!r})"
     )
 
 
@@ -253,8 +253,7 @@ def _annotate(
         if given and "quantity_kind" not in current and "quantity_kind" not in given:
             raise ValueError(
                 f"{name}: quantity_kind is required on every annotated variable, "
-                f"including "
-                "one given only a units correction"
+                "including one given only a units correction"
             )
         change: dict[str, Any] = {}
         for key, value in given.items():
@@ -274,8 +273,7 @@ def _annotate(
             elif current[key] != value:
                 raise ValueError(
                     f"{name!r} is already annotated {key}={current[key]!r}; refusing "
-                    f"to "
-                    f"change it to {value!r}"
+                    f"to change it to {value!r}"
                 )
         kind = change.get("quantity_kind", current.get("quantity_kind"))
         if (
@@ -314,10 +312,9 @@ class NoRowFitsError(ValueError):
         )
         super().__init__(
             f"{name}: the source published it in {published!r}, and the annotation "
-            f"table has "
-            f"{found} for that (its source_units are {listed}); it is another product "
-            f"or "
-            "the source changed its unit, so the table cannot say what the values are"
+            f"table has {found} for that (its source_units are {listed}); it is "
+            "another product or the source changed its unit, so the table cannot say "
+            "what the values are"
         )
 
 
@@ -408,7 +405,7 @@ def _as_mapping(
         rows = {name: dict(row) for name, row in annotations.items()}
     else:
         raise ValueError(
-            f"annotations are a mapping or a DataFrame, not "
+            "annotations are a mapping or a DataFrame, not "
             f"{type(annotations).__name__}"
         )
     out = {}
@@ -448,9 +445,8 @@ def _check_correction(
     if not math.isclose(factor, 1.0, rel_tol=1e-9):
         raise ValueError(
             f"{name!r}: units: the values are in {old!r}, and 1 {old!r} is {factor:g} "
-            f"{new!r}; an "
-            "annotation corrects a unit, it does not relabel values -- use "
-            "convert_units"
+            f"{new!r}; an annotation corrects a unit, it does not relabel values -- "
+            "use convert_units"
         )
 
 
@@ -652,8 +648,7 @@ def _counting_problems(
             return []
         return [
             f"counting is required wherever species is set: one of {list(COUNTINGS)} "
-            f"(there is "
-            "no default, so moles are never read as the wrong count)"
+            "(there is no default, so moles are never read as the wrong count)"
         ]
     out = []
     if vector is not None and unit is not None:
@@ -753,8 +748,7 @@ def _iri_problems(
             if row["dimension_vector"] != expected:
                 out.append(
                     f"units_iri {iri} has dimensions {row['dimension_vector']}, but "
-                    f"{kind} has "
-                    f"{expected}"
+                    f"{kind} has {expected}"
                 )
     elif kind is not None and qudt.is_local_kind(kind):
         # QUDT cannot list a kind it lacks, so a local kind is matched
@@ -763,8 +757,7 @@ def _iri_problems(
         if row["dimension_vector"] != expected:
             out.append(
                 f"units_iri {iri} has dimensions {row['dimension_vector']}, but {kind} "
-                f"has "
-                f"{expected}"
+                f"has {expected}"
             )
     elif kind is not None and not kinds & _kind_and_ancestors(kind):
         out.append(f"units_iri {iri} is a unit of {sorted(kinds)}, not of {kind}")
@@ -788,8 +781,7 @@ def _iri_problems(
         if not math.isclose(actual, expected, rel_tol=1e-6):
             out.append(
                 f"units_iri {iri} is {multiplier:g} SI units per unit, but {units!r} "
-                f"is "
-                f"{registry.Quantity(1.0, unit).to_base_units().magnitude:g}"
+                f"is {registry.Quantity(1.0, unit).to_base_units().magnitude:g}"
             )
             break
     return out
