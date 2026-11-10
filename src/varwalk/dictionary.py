@@ -119,8 +119,9 @@ def _table_records(df: pd.DataFrame) -> list[dict[str, Any]]:
     records = df.attrs.get("variables")
     if not records:
         raise ValueError(
-            "the table has no data dictionary in attrs['variables']; attach one with "
-            "sources._record.attach_record first"
+            "the table has no data dictionary in attrs['variables']; build one "
+            "with varwalk.variables.variables_frame and store "
+            "variables_to_records(...) there first"
         )
     return records
 

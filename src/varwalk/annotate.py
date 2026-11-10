@@ -69,6 +69,7 @@ __all__ = [
     "NoRowFitsError",
     "annotate",
     "annotated_variables",
+    "clear_table_cache",
     "iri_fits",
     "read_table",
     "validate_annotations",
@@ -95,7 +96,6 @@ def _equivalent_hint(unit: pint.Unit, registry: pint.UnitRegistry) -> str:
     )
 
 
-@functools.cache
 def read_table(path: Path) -> pd.DataFrame:
     """Read and validate one curated annotation table, indexed by
     ``name``. The file is a CSV with a ``name`` column, a
@@ -104,9 +104,20 @@ def read_table(path: Path) -> pd.DataFrame:
     name the source publishes in several units has a row for each, every
     one stating its ``source_units``. Raises ``ValueError`` for a
     missing column, an unknown column, a name repeated with the same or
-    a blank ``source_units``. Cached by path
-    (``read_table.cache_clear()`` forgets it), so callers copy the
-    result before changing it."""
+    a blank ``source_units``. Returns a copy of a table read once per
+    path and cached; :func:`clear_table_cache` forgets what was read."""
+    return _read_table(path).copy()
+
+
+def clear_table_cache() -> None:
+    """Forget the tables :func:`read_table` has read, so a file changed
+    on disk is read afresh."""
+    _read_table.cache_clear()
+
+
+@functools.cache
+def _read_table(path: Path) -> pd.DataFrame:
+    """Read and validate one table file; cached, so callers copy it."""
     import pandas as pd
 
     table = pd.read_csv(path, dtype=str, keep_default_na=False, engine="pyarrow")

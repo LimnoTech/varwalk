@@ -349,9 +349,14 @@ def test_read_table_reads_with_the_pyarrow_engine(tmp_path, monkeypatch):
 def test_read_table_reads_a_file_once_per_path(tmp_path):
     path = tmp_path / "demo.csv"
     path.write_text("name,quantity_kind\nx,Length\n", encoding="utf-8")
-    an.read_table.cache_clear()
-    assert an.read_table(path) is an.read_table(path)
-    an.read_table.cache_clear()
+    an.clear_table_cache()
+    first = an.read_table(path)
+    first.loc["x", "quantity_kind"] = "Changed"
+    assert an.read_table(path).loc["x", "quantity_kind"] == "Length"
+    path.write_text("name,quantity_kind\nx,Mass\n", encoding="utf-8")
+    assert an.read_table(path).loc["x", "quantity_kind"] == "Length"  # cached
+    an.clear_table_cache()
+    assert an.read_table(path).loc["x", "quantity_kind"] == "Mass"
 
 
 def test_a_units_only_correction_still_needs_a_quantity_kind():
@@ -945,9 +950,12 @@ def test_a_unit_set_where_the_source_had_none_names_the_published_string():
 
 @pytest.mark.parametrize("make", [table, cube], ids=["table", "dataset"])
 def test_a_mislabelled_unit_is_corrected_and_the_label_kept(make):
-    # a variable published as 'ft' whose values are metres: the source
-    # labelled it wrongly. A curated row for source_units 'ft' states
-    # the unit the values are in.
+    """A variable published as 'ft' whose values are metres: the source
+    labelled it wrongly. A curated row for source_units 'ft' states the
+    unit the values are in. The scale guard refuses replacing a set
+    ``units`` (see the companion test), so the supported route is an
+    empty ``units`` beside ``source_units`` 'ft', the state
+    ``check_udunits`` leaves when it refuses a published unit."""
     if make is table:
         data = _source_table(None, "ft").rename(columns={"Ca": "h"})
         data.attrs["variables"][0]["name"] = "h"
@@ -970,3 +978,11 @@ def test_a_mislabelled_unit_is_corrected_and_the_label_kept(make):
         f"{STAMP} varwalk: annotate: ['h']; "
         "set h units 'm' (source_units 'ft') (year setting: julian)"
     )
+
+
+def test_replacing_a_set_unit_by_another_scale_is_refused():
+    # 'ft' is a unit UDUNITS accepts, so units is set: ft -> m would
+    # relabel the values at another scale, which annotate refuses
+    data = table({"h": ([1.0], "ft")})
+    with pytest.raises(ValueError, match=r"'h': units: the values are in 'ft'"):
+        an.annotate(data, {"h": {"units": "m", "quantity_kind": "Length"}})

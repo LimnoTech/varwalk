@@ -167,8 +167,8 @@ def convert_units(
         if have != expected:
             raise ValueError(
                 f"{name!r} is {kind} ({expected}), but its units {found['units']!r} "
-                f"have "
-                f"dimensions {have}; fix them with units.annotate.annotate first"
+                f"have dimensions {have}; fix them with "
+                "varwalk.annotate.annotate first"
             )
         actual = dimension_vector(wanted, registry)
         if actual != expected:
