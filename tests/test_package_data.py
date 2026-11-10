@@ -1,4 +1,5 @@
-"""The data files ship in a built wheel, so a non-editable install has them."""
+"""The data files ship in a built wheel, so a non-editable install has
+them."""
 
 from __future__ import annotations
 

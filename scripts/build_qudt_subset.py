@@ -1,9 +1,10 @@
 """Build the QUDT subset shipped in src/varwalk/data/qudt/.
 
-Run with `pixi run build-qudt` (rdflib is in the qudt feature). Downloads the pinned QUDT
-release, checks its SHA-256, parses units, quantity kinds and dimension vectors, and writes
-Parquet with a CSV copy plus a README carrying the release and CC BY 4.0 attribution.
-Rebuilding is deliberate: bump RELEASE, URL and SHA256 together when QUDT releases.
+Run with `pixi run build-qudt` (rdflib is in the qudt feature).
+Downloads the pinned QUDT release, checks its SHA-256, parses units,
+quantity kinds and dimension vectors, and writes Parquet with a CSV copy
+plus a README carrying the release and CC BY 4.0 attribution. Rebuilding
+is deliberate: bump RELEASE, URL and SHA256 together when QUDT releases.
 """
 
 from __future__ import annotations
@@ -41,8 +42,9 @@ def _local(iri, namespace):
 
 
 def _one(graph, subject, predicate):
-    # QUDT gives some units several symbols or UCUM codes; keep the first in sort order, so a
-    # rebuild from the same release always writes the same subset
+    # QUDT gives some units several symbols or UCUM codes; keep the
+    # first in sort order, so a rebuild from the same release always
+    # writes the same subset
     values = sorted(str(value) for value in graph.objects(subject, predicate))
     return values[0] if values else None
 
@@ -99,7 +101,8 @@ def build(zip_bytes: bytes) -> tuple[pd.DataFrame, pd.DataFrame]:
                 "dimension_vector": _local(
                     _one(graph, subject, QUDT.hasDimensionVector), QKDV_NS
                 ),
-                "conversion_multiplier": multiplier,  # null: QUDT's 0.0, "not convertible"
+                # null where QUDT gives 0.0: "not convertible"
+                "conversion_multiplier": multiplier,
                 "conversion_offset": float(
                     _one(graph, subject, QUDT.conversionOffset) or 0.0
                 ),
@@ -166,7 +169,8 @@ def main() -> None:
         f"# QUDT subset\n\n"
         f"Extracted from [QUDT](https://qudt.org) release v{RELEASE} ({RELEASE_DATE}), "
         f"`{URL}`, SHA-256 `{SHA256}`, by `scripts/build_qudt_subset.py`.\n\n"
-        f"- `units`: {len(units)} units\n- `quantity_kinds`: {len(kinds)} quantity kinds\n\n"
+        f"- `units`: {len(units)} units\n- `quantity_kinds`: {len(kinds)} quantity "
+        f"kinds\n\n"
         "QUDT is licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); "
         "attribution to QUDT.org. `conversion_multiplier` is null where QUDT gives 0.0 "
         '("not convertible"). Rebuild with `pixi run build-qudt`.\n'

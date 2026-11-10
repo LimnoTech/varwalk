@@ -1,4 +1,5 @@
-"""Annotations: annotate, read_table, validate_annotations. See docs/units.md section 5."""
+"""Annotations: annotate, read_table, validate_annotations. See
+docs/units.md section 5."""
 
 from __future__ import annotations
 
@@ -56,7 +57,8 @@ def test_conflicting_reannotation_raises_and_the_same_value_is_a_no_op():
 
 
 def test_an_annotation_corrects_a_wrong_unit_and_records_it():
-    # a hand-built dictionary whose units holds kg-N/ha (a unit UDUNITS reads as something else)
+    # a hand-built dictionary whose units holds kg-N/ha (a unit UDUNITS
+    # reads as something else)
     data = table({"n_dw": ([3.0], "kg-N/ha")})
     out = an.annotate(
         data,
@@ -143,7 +145,9 @@ def test_deprecated_quantity_kind_is_flagged_with_its_replacement():
     data = table({"SC": ([100.0], "uS cm-1")})
     with pytest.raises(
         ValueError,
-        match="quantity_kind Conductivity is deprecated in QUDT; use ElectricConductivity",
+        match=(
+            "quantity_kind Conductivity is deprecated in QUDT; use ElectricConductivity"
+        ),
     ):
         an.annotate(data, {"SC": {"quantity_kind": "Conductivity"}})
 
@@ -167,7 +171,8 @@ def test_deprecated_quantity_kind_is_flagged_with_its_replacement():
         ),
         ("mg l-1", "MassConcentration", "MilliGM-PER-L", None),
         ("mg l-1", "MassConcentration", "NOT-A-UNIT", "not a QUDT unit"),
-        # QUDT lists MilliMOL-PER-M2 under no kind it has; a local kind matches by dimension
+        # QUDT lists MilliMOL-PER-M2 under no kind it has; a local kind
+        # matches by dimension
         ("mmol m-2", "AmountOfSubstancePerArea", "MilliMOL-PER-M2", None),
         ("kg ha-1", "MassPerArea", "MilliMOL-PER-M2", "not of MassPerArea"),
         (
@@ -285,7 +290,8 @@ def test_the_shared_schema_carries_annotation_fields():
 
 
 def read_csv_table(tmp_path, text: str, stem: str = "demo"):
-    """A curated table written to ``tmp_path`` and read with ``read_table``."""
+    """A curated table written to ``tmp_path`` and read with
+    ``read_table``."""
     path = tmp_path / f"{stem}.csv"
     path.write_text(text, encoding="utf-8")
     return an.read_table(path)
@@ -370,7 +376,8 @@ def test_refusals_name_what_failed():
         )
 
 
-# --- a curated table covers a whole dataset; a mapping names what the caller means
+# --- a curated table covers a whole dataset; a mapping names what
+#     the caller means
 
 AMMONIUM = {
     "quantity_kind": "MassConcentration",
@@ -450,11 +457,13 @@ def test_counting_takes_mass_amount_or_equivalents_only():
         ("meq/L", "AmountOfSubstanceConcentration", "equivalents", "UDUNITS has no eq"),
         ("mmol m-2 d-1", "MolarFluxDensity", "equivalents", None),
         ("kmol ha-1", "AmountOfSubstancePerArea", "equivalents", None),
-        # a mass fraction (USGS 00621, nitrate in sediment as N): no mass in the dimension,
-        # but QUDT's MassFraction has a mass numerator
+        # a mass fraction (USGS 00621, nitrate in sediment as N): no
+        # mass in the dimension, but QUDT's MassFraction has a mass
+        # numerator
         ("mg kg-1", "MassFraction", "mass", None),
-        # a mole fraction is the same shape counting moles: no amount in the dimension, but
-        # QUDT's MoleFraction has an amount of substance in its numerator
+        # a mole fraction is the same shape counting moles: no amount in
+        # the dimension, but QUDT's MoleFraction has an amount of
+        # substance in its numerator
         ("mol mol-1", "MoleFraction", "amount", None),
         ("mol mol-1", "MoleFraction", "equivalents", None),
         ("mol mol-1", "MoleFraction", "mass", "counting 'mass' needs a unit with mass"),
@@ -632,7 +641,8 @@ def test_iri_fits_derives_counting_from_an_equivalents_kind(monkeypatch):
     assert seen == ["equivalents", "equivalents", None, "amount"]
 
 
-# --- a dimensionless kind is judged by its unit's numerator; three more equivalents kinds
+# --- a dimensionless kind is judged by its unit's numerator; three more
+#     equivalents kinds
 
 
 @pytest.mark.parametrize(
@@ -651,7 +661,8 @@ def test_iri_fits_derives_counting_from_an_equivalents_kind(monkeypatch):
             "mass",
             "counting 'mass' needs a unit with mass",
         ),
-        # a numerator with neither falls back to the kind's own numerator
+        # a numerator with neither falls back to the kind's own
+        # numerator
         ("1", "MoleFraction", "amount", None),
         ("percent", "MassFraction", "mass", None),
         ("percent", "MassFraction", "amount", "counting 'amount' needs a unit in mol"),
@@ -746,12 +757,12 @@ def test_a_flux_written_in_eq_is_told_its_own_units_in_mol():
     assert "'mmol l-1'" not in str(err.value)
 
 
-# --- source_units: which row of a curated table fits the data -----------------------------
+# --- source_units: which row of a curated table fits the data
 
 
 def _source_table(units: str | None, source: str) -> pd.DataFrame:
-    """A table as a source attaches it: ``units`` (what UDUNITS accepted, or None) beside the
-    published ``source_units``."""
+    """A table as a source attaches it: ``units`` (what UDUNITS
+    accepted, or None) beside the published ``source_units``."""
     frame = pd.DataFrame({"Ca": pd.array([1.0], dtype="Float64")})
     rows = [{"name": "Ca", "source_units": source, "units": units}]
     frame.attrs["variables"] = variables_to_records(variables_frame(rows))
@@ -804,8 +815,9 @@ def test_reannotating_with_the_same_table_is_a_no_op(means_table):
 
 
 def test_a_table_never_matches_by_its_current_units(means_table):
-    # another product published in kg ha-1 (source_units 'kg ha-1', not the table's 'kg/ha'):
-    # only a Dataset falls back to the current units, so a table record must raise
+    # another product published in kg ha-1 (source_units 'kg ha-1', not
+    # the table's 'kg/ha'): only a Dataset falls back to the current
+    # units, so a table record must raise
     with pytest.raises(
         ValueError, match=r"Ca: the source published it in 'kg ha-1'.*no row"
     ):
@@ -824,7 +836,8 @@ def test_a_dataset_is_matched_by_its_units_attribute(means_table):
 
 
 def test_a_fresh_dataset_in_moles_never_takes_an_equivalents_row(means_table):
-    # umol l-1 is what the equivalents row writes its units as, but the data is not that row's
+    # umol l-1 is what the equivalents row writes its units as, but the
+    # data is not that row's
     with pytest.raises(
         ValueError, match=r"Ca: the source published it in 'umol l-1'.*no row"
     ):
@@ -843,8 +856,9 @@ def test_a_dataset_matches_by_current_units_only_when_it_carries_the_rows_kind(
     once = an.annotate(
         cube({"Ca": ([1.0, 2.0], "mg/L")}), table_
     )  # first row, by source_units
-    # now units 'mg l-1' and kind MassConcentration: the first row (re-annotation, by units) and
-    # the second (by the published unit) both fit
+    # now units 'mg l-1' and kind MassConcentration: the first row
+    # (re-annotation, by units) and the second (by the published unit)
+    # both fit
     with pytest.raises(ValueError, match=r"Ca: .*more than one row"):
         an.annotate(once, table_)
 
@@ -901,7 +915,8 @@ def test_read_table_refuses_ambiguous_rows(tmp_path, csv, match):
 
 
 def test_a_unit_set_where_the_source_had_none_names_the_published_string():
-    # what a data dictionary holds when UDUNITS refuses the published unit: no units, kg-N/ha published
+    # what a data dictionary holds when UDUNITS refuses the published
+    # unit: no units, kg-N/ha published
     data = _source_table(None, "kg-N/ha").rename(columns={"Ca": "n_dw"})
     data.attrs["variables"][0]["name"] = "n_dw"
     out = an.annotate(
@@ -924,13 +939,15 @@ def test_a_unit_set_where_the_source_had_none_names_the_published_string():
     )
 
 
-# --- a published unit that mislabels its values is corrected, and the label kept
+# --- a published unit that mislabels its values is corrected, and the
+#     label kept
 
 
 @pytest.mark.parametrize("make", [table, cube], ids=["table", "dataset"])
 def test_a_mislabelled_unit_is_corrected_and_the_label_kept(make):
-    # a variable published as 'ft' whose values are metres: the source labelled it wrongly.
-    # A curated row for source_units 'ft' states the unit the values are in.
+    # a variable published as 'ft' whose values are metres: the source
+    # labelled it wrongly. A curated row for source_units 'ft' states
+    # the unit the values are in.
     if make is table:
         data = _source_table(None, "ft").rename(columns={"Ca": "h"})
         data.attrs["variables"][0]["name"] = "h"

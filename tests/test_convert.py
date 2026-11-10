@@ -68,7 +68,10 @@ def test_year_setting_is_written_explicitly(setting, written):
 def test_dimension_mismatch_raises():
     with pytest.raises(
         ValueError,
-        match=r"'DEP' is MassPerAreaTime \(A0E0L-2I0M1H0T-1D0\), but 'kg ha-1' has dimensions",
+        match=(
+            r"'DEP' is MassPerAreaTime \(A0E0L-2I0M1H0T-1D0\), "
+            "but 'kg ha-1' has dimensions"
+        ),
     ):
         convert_units(flux(table), {"DEP": "kg ha-1"})
 
@@ -263,7 +266,8 @@ def test_february_2024_has_29_days():
     assert record(out, "DEP")["units"] == "kg m-2"
     assert record(out, "DEP")["quantity_kind"] == "MassPerArea"
     assert out.attrs["history"].endswith(
-        "rate_to_amount: DEP 'kg m-2 s-1' (MassPerAreaTime) -> 'kg m-2' (MassPerArea) over "
+        "rate_to_amount: DEP 'kg m-2 s-1' (MassPerAreaTime) -> 'kg m-2' (MassPerArea) "
+        "over "
         "each period's own length, time + 1 MS (year setting: julian)"
     )
 
@@ -276,7 +280,8 @@ def test_noleap_february_has_28_days():
 
 
 def test_periods_that_are_not_calendar_months_use_their_own_start_and_end():
-    # a monthly mean built from whole weekly samples: 2018-10-02 to 2018-10-30, 28 days
+    # a monthly mean built from whole weekly samples: 2018-10-02 to
+    # 2018-10-30, 28 days
     data = annotate(table({"wet": ([1.0, 2.0], "kg ha-1 d-1")}), {"wet": FLUX})
     data["startDate"] = pd.to_datetime(["2018-10-02", "2018-10-30"])
     data["endDate"] = pd.to_datetime(["2018-10-30", "2018-11-27"])
@@ -590,7 +595,8 @@ def test_period_may_be_an_index_level():
     )
 
 
-# --- counting is kept, and an eq target is judged by counting, not by the kind
+# --- counting is kept, and an eq target is judged by counting, not by
+#     the kind
 
 
 def test_convert_units_keeps_counting_and_judges_an_eq_target_by_it():
@@ -725,7 +731,8 @@ def test_an_invalid_counting_on_a_rate_is_refused():
         rate_to_amount(data, ["Ca"], period="time", freq="MS")
 
 
-# --- a dimensionless kind keeps its numerator: mass fraction <-> mole fraction is refused
+# --- a dimensionless kind keeps its numerator: mass fraction <-> mole
+#     fraction is refused
 
 
 @pytest.mark.parametrize(

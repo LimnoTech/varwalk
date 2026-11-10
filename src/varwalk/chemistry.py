@@ -1,17 +1,20 @@
-"""Chemical basis and amount: :func:`convert_basis` and :func:`convert_amount`.
-docs/units.md section 5.
+"""Chemical basis and amount: :func:`convert_basis` and
+:func:`convert_amount`. docs/units.md section 5.
 
-Every variable used needs ``species`` (the chemical entity, with its charge: ``NO3-``) and
-``basis`` (what the number counts: ``N`` for "as nitrogen", or the species itself). Molar
-masses and charges come from molmass, never typed by hand.
+Every variable used needs ``species`` (the chemical entity, with its
+charge: ``NO3-``) and ``basis`` (what the number counts: ``N`` for "as
+nitrogen", or the species itself). Molar masses and charges come from
+molmass, never typed by hand.
 
-What a value counts is its ``counting`` (``annotate.COUNTINGS``), never guessed from the unit:
+What a value counts is its ``counting`` (``annotate.COUNTINGS``), never
+guessed from the unit:
 
 - a **mass** counts grams of the basis;
-- an **amount** (``mol``) counts moles of the basis: 100 umol/L of nitrate with basis ``N`` is
-  100 umol/L of N, which is 1.40 mg/L as N;
-- **equivalents** count the species' charge: ``meq = mmol of species x |charge|``. They are
-  written in ``mol`` with ``counting`` ``equivalents``, as CF does, because UDUNITS has no
+- an **amount** (``mol``) counts moles of the basis: 100 umol/L of
+  nitrate with basis ``N`` is 100 umol/L of N, which is 1.40 mg/L as N;
+- **equivalents** count the species' charge:
+  ``meq = mmol of species x |charge|``. They are written in ``mol`` with
+  ``counting`` ``equivalents``, as CF does, because UDUNITS has no
   ``eq``.
 """
 
@@ -49,12 +52,15 @@ __all__ = [
     "convert_basis",
 ]
 
-#: One quantity counted as a mass and as an amount of substance, per row: the pairs
-#: ``convert_amount`` moves between for mass <-> amount (and mass <-> equivalents, which are
-#: written in the amount kind). ``AmountOfSubstancePerArea`` is a local kind
-#: (``qudt.local_kinds_table``): QUDT has no amount-per-area kind. The first row that matches
-#: is used, so an amount converts back to ``MassConcentration`` from either concentration kind.
-#: Amount <-> equivalents needs no row: the quantity kind does not change, only ``counting``.
+#: One quantity counted as a mass and as an amount of substance, per
+#: row: the pairs ``convert_amount`` moves between for mass <-> amount
+#: (and mass <-> equivalents, which are written in the amount kind).
+#: ``AmountOfSubstancePerArea`` is a local kind
+#: (``qudt.local_kinds_table``): QUDT has no amount-per-area kind. The
+#: first row that matches is used, so an amount converts back to
+#: ``MassConcentration`` from either concentration kind. Amount <->
+#: equivalents needs no row: the quantity kind does not change, only
+#: ``counting``.
 AMOUNT_KINDS: tuple[tuple[str, str], ...] = (
     ("MassConcentration", "AmountOfSubstanceConcentration"),
     ("MassConcentration", "Concentration"),
@@ -66,9 +72,9 @@ AMOUNT_KINDS: tuple[tuple[str, str], ...] = (
     ("MassPerArea", "AmountOfSubstancePerArea"),
 )
 
-#: The dimensional kind ``convert_amount`` writes in place of each kind that counts
-#: equivalents by definition (``EQUIVALENT_KINDS``), with ``counting`` ``equivalents``: one form
-#: for every dimension.
+#: The dimensional kind ``convert_amount`` writes in place of each kind
+#: that counts equivalents by definition (``EQUIVALENT_KINDS``), with
+#: ``counting`` ``equivalents``: one form for every dimension.
 _DIMENSIONAL_KIND = {
     "EquivalentConcentration": "AmountOfSubstanceConcentration",
     "MolarEquivalent": "AmountOfSubstance",
@@ -86,8 +92,9 @@ def __getattr__(name: str) -> Any:
 
 @contextmanager
 def _naming(name: str) -> Generator[None]:
-    """Prefix a refusal with the variable's name unless it already starts with it (a message
-    that names the species ``'N'`` does not name the variable ``'N'``)."""
+    """Prefix a refusal with the variable's name unless it already
+    starts with it (a message that names the species ``'N'`` does not
+    name the variable ``'N'``)."""
     try:
         yield
     except ValueError as err:
@@ -97,8 +104,8 @@ def _naming(name: str) -> Generator[None]:
 
 
 def _chemistry(name: str, found: Mapping[str, Any]) -> tuple[str, str, str, str]:
-    """The variable's quantity kind, species, basis and counting; ``ValueError`` naming the
-    first one missing."""
+    """The variable's quantity kind, species, basis and counting;
+    ``ValueError`` naming the first one missing."""
     kind = require_kind(name, found, "a chemical conversion")
     missing = [key for key in ("species", "basis") if key not in found]
     if missing:
@@ -108,17 +115,18 @@ def _chemistry(name: str, found: Mapping[str, Any]) -> tuple[str, str, str, str]
     counting = counting_of(found, name)
     if counting is None:
         raise ValueError(
-            f"{name!r} has no counting; a chemical conversion needs to know whether it counts "
+            f"{name!r} has no counting; a chemical conversion needs to know whether it "
+            f"counts "
             f"{', '.join(COUNTINGS)}"
         )
     return kind, found["species"], found["basis"], counting
 
 
 def _target_counting(name: str, unit: pint.Unit, registry: pint.UnitRegistry) -> str:
-    """What a target unit asks for: ``equivalents`` (``eq`` in it), ``amount`` (``mol``), or
-    ``mass`` (mass and no amount of substance). A dimensionless target is read by its
-    numerator: ``mg kg-1`` asks for a mass, ``umol mol-1`` an amount, ``ueq mol-1``
-    equivalents."""
+    """What a target unit asks for: ``equivalents`` (``eq`` in it),
+    ``amount`` (``mol``), or ``mass`` (mass and no amount of substance).
+    A dimensionless target is read by its numerator: ``mg kg-1`` asks
+    for a mass, ``umol mol-1`` an amount, ``ueq mol-1`` equivalents."""
     from .validate import dimension_vector
 
     vector = dimension_vector(unit, registry)
@@ -146,17 +154,20 @@ def convert_basis(
     now: datetime | None = None,
     mark: str = HISTORY_MARK,
 ) -> Any:
-    """Change the entity a value counts, keeping ``quantity_kind`` and ``units``:
-    ``{"NH4": "N"}`` turns mg/L of NH4+ into mg/L as N.
+    """Change the entity a value counts, keeping ``quantity_kind`` and
+    ``units``: ``{"NH4": "N"}`` turns mg/L of NH4+ into mg/L as N.
 
-    For a mass the factor is ``n_new x M(new) / (n_old x M(basis))``, where ``n`` is how many
-    of a basis one species contains (14.007 / 18.038 for NH4+ -> N); for an amount it is
-    ``n_new / n_old``; equivalents count the species' charge and do not change. A Dataset
-    variable's ``valid_min``, ``valid_max``, ``valid_range`` and ``actual_range`` are scaled
-    with its values (packed ``valid_*`` unpacked first). Refuses (``ValueError``) a new basis
-    that is not a string, and one whose element the species does not contain.
+    For a mass the factor is ``n_new x M(new) / (n_old x M(basis))``,
+    where ``n`` is how many of a basis one species contains (14.007 /
+    18.038 for NH4+ -> N); for an amount it is ``n_new / n_old``;
+    equivalents count the species' charge and do not change. A Dataset
+    variable's ``valid_min``, ``valid_max``, ``valid_range`` and
+    ``actual_range`` are scaled with its values (packed ``valid_*``
+    unpacked first). Refuses (``ValueError``) a new basis that is not a
+    string, and one whose element the species does not contain.
 
-    ``mark`` opens each ``history`` line this writes, after its timestamp.
+    ``mark`` opens each ``history`` line this writes, after its
+    timestamp.
     """
     from ._formula import basis_count, molar_mass
     from .annotate import validate_annotations
@@ -193,7 +204,8 @@ def convert_basis(
             **converted_ranges(data, name, lambda raw, f=factor: raw * f),
         }
         history.append(
-            f"convert_basis: {name} ({species}) as {basis} -> as {new_basis}, x{factor:.6g} "
+            f"convert_basis: {name} ({species}) as {basis} -> as {new_basis}, "
+            f"x{factor:.6g} "
             f"(year setting: {setting})"
         )
     out = updated(data, changes, values=values, history=history, now=now, mark=mark)
@@ -202,14 +214,16 @@ def convert_basis(
 
 
 def _paired_kind(name: str, kind: str, counting: str) -> str:
-    """The kind of ``kind`` counted the other way, mass <-> amount, from :data:`AMOUNT_KINDS`."""
+    """The kind of ``kind`` counted the other way, mass <-> amount, from
+    :data:`AMOUNT_KINDS`."""
     have, other = (0, 1) if counting == "mass" else (1, 0)
     for row in AMOUNT_KINDS:
         if row[have] == kind:
             return row[other]
     known = sorted({row[have] for row in AMOUNT_KINDS})
     raise ValueError(
-        f"{name!r} is {kind} counted as {counting}; convert_amount moves mass <-> amount for "
+        f"{name!r} is {kind} counted as {counting}; convert_amount moves mass <-> "
+        f"amount for "
         f"{known}"
     )
 
@@ -222,30 +236,37 @@ def convert_amount(
     now: datetime | None = None,
     mark: str = HISTORY_MARK,
 ) -> Any:
-    """Convert between mass, amount and equivalents, in any dimension that has both forms:
-    ``targets`` maps variable name to a unit in another counting (``"mg l-1"``,
-    ``"umol l-1"``, ``"meq m-2 d-1"``).
+    """Convert between mass, amount and equivalents, in any dimension
+    that has both forms: ``targets`` maps variable name to a unit in
+    another counting (``"mg l-1"``, ``"umol l-1"``, ``"meq m-2 d-1"``).
 
-    - mass <-> amount uses the molar mass of ``basis``, and the quantity kind changes by
-      :data:`AMOUNT_KINDS` (``MassPerArea`` -> ``AmountOfSubstancePerArea``);
-    - amount <-> equivalents uses ``|charge|`` of ``species`` (always positive) and how many of
-      the basis one species contains; the quantity kind does not change, only ``counting``:
-      1 mmol m-2 d-1 of Ca+2 is 2 meq m-2 d-1, both ``MolarFluxDensity``.
+    - mass <-> amount uses the molar mass of ``basis``, and the quantity
+      kind changes by :data:`AMOUNT_KINDS` (``MassPerArea`` ->
+      ``AmountOfSubstancePerArea``);
+    - amount <-> equivalents uses ``|charge|`` of ``species`` (always
+      positive) and how many of the basis one species contains; the
+      quantity kind does not change, only ``counting``: 1 mmol m-2 d-1
+      of Ca+2 is 2 meq m-2 d-1, both ``MolarFluxDensity``.
 
-    What the source counts is its ``counting``; what the target counts is read from its unit: a
-    ``mol`` target is an amount (moles of ``basis``), an ``eq`` target equivalents, whatever the
-    source counts. Equivalents are written in moles (``meq m-2 d-1`` as ``mmol d-1 m-2``), and a
-    kind that counts equivalents by definition is written as its dimensional kind
-    (``EquivalentConcentration`` -> ``AmountOfSubstanceConcentration``,
-    ``CationExchangeCapacity`` -> ``AmountOfSubstancePerMass``, with the ``counting`` it
-    converts to). ``units``, ``counting`` and ``quantity_kind`` are written and
-    ``units_iri`` is removed. A Dataset variable's ``valid_min``, ``valid_max``,
-    ``valid_range`` and ``actual_range`` are scaled with its values (packed ``valid_*``
-    unpacked first). Refuses (``ValueError``) a target in the same counting (use
-    ``convert_units``), equivalents of an uncharged species, a mass <-> amount change for a kind
-    :data:`AMOUNT_KINDS` lacks, and a target whose dimensions do not fit.
+    What the source counts is its ``counting``; what the target counts
+    is read from its unit: a ``mol`` target is an amount (moles of
+    ``basis``), an ``eq`` target equivalents, whatever the source
+    counts. Equivalents are written in moles (``meq m-2 d-1`` as
+    ``mmol d-1 m-2``), and a kind that counts equivalents by definition
+    is written as its dimensional kind (``EquivalentConcentration`` ->
+    ``AmountOfSubstanceConcentration``, ``CationExchangeCapacity`` ->
+    ``AmountOfSubstancePerMass``, with the ``counting`` it converts to).
+    ``units``, ``counting`` and ``quantity_kind`` are written and
+    ``units_iri`` is removed. A Dataset variable's ``valid_min``,
+    ``valid_max``, ``valid_range`` and ``actual_range`` are scaled with
+    its values (packed ``valid_*`` unpacked first). Refuses
+    (``ValueError``) a target in the same counting (use
+    ``convert_units``), equivalents of an uncharged species, a mass <->
+    amount change for a kind :data:`AMOUNT_KINDS` lacks, and a target
+    whose dimensions do not fit.
 
-    ``mark`` opens each ``history`` line this writes, after its timestamp.
+    ``mark`` opens each ``history`` line this writes, after its
+    timestamp.
     """
     from . import qudt
     from ._formula import basis_count, charge, molar_mass
@@ -269,12 +290,14 @@ def convert_amount(
             target_role = _target_counting(name, wanted, registry)
         if target_role == role == "equivalents":
             raise ValueError(
-                f"{name!r} is already counted as equivalents; rescale it with convert_units, "
+                f"{name!r} is already counted as equivalents; rescale it with "
+                f"convert_units, "
                 f"writing the target in moles (for example {found['units']!r}), not eq"
             )
         if target_role == role:
             raise ValueError(
-                f"{name!r} is already counted as {role}; change its scale with convert_units"
+                f"{name!r} is already counted as {role}; change its scale with "
+                f"convert_units"
             )
         dimensional = _DIMENSIONAL_KIND.get(kind, kind)
         if "mass" in (role, target_role):
@@ -290,7 +313,8 @@ def convert_amount(
         if actual != expected:
             raise ValueError(
                 f"{name!r}: the {target_role} form of {kind} would be {target_kind} "
-                f"({expected}), which does not match the dimensions of the target {target!r} "
+                f"({expected}), which does not match the dimensions of the target "
+                f"{target!r} "
                 f"({actual})"
             )
         with _naming(name):
@@ -329,8 +353,10 @@ def convert_amount(
             **converted_ranges(data, name, lambda raw, f=factor: raw * f),
         }
         history.append(
-            f"convert_amount: {name} {found['units']!r} ({kind}, {role}) -> {written!r} "
-            f"({target_kind}, {target_role}) as {basis}, species {species}, x{factor:.6g} "
+            f"convert_amount: {name} {found['units']!r} ({kind}, {role}) -> "
+            f"{written!r} "
+            f"({target_kind}, {target_role}) as {basis}, species {species}, "
+            f"x{factor:.6g} "
             f"(year setting: {setting})"
         )
     out = updated(data, changes, values=values, history=history, now=now, mark=mark)

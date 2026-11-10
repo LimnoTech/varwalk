@@ -1,4 +1,5 @@
-"""The private pint registry: year settings, CF output, isolation. See docs/units.md section 4."""
+"""The private pint registry: year settings, CF output, isolation. See
+docs/units.md section 4."""
 
 from __future__ import annotations
 
@@ -129,7 +130,8 @@ def test_format_units_writes_cf_style_and_micro_is_ascii_u():
 
 
 def test_format_units_writes_an_angle_as_udunits_degree():
-    # pint's cf format prints "deg", which UDUNITS-2 does not know (a source may publish "degree")
+    # pint's cf format prints "deg", which UDUNITS-2 does not know (a
+    # source may publish "degree")
     assert reg.format_units("degree") == "degree"
     assert reg.format_units("degree s-1") == "degree s-1"
 
@@ -155,8 +157,9 @@ def test_equivalent_is_an_amount():
 
 
 def test_first_use_leaves_the_callers_application_registry_alone():
-    """cf_xarray.units replaces pint's application registry on import; the layer must put the
-    caller's back. Needs a fresh interpreter: cf_xarray.units must not be imported yet."""
+    """cf_xarray.units replaces pint's application registry on import;
+    the layer must put the caller's back. Needs a fresh interpreter:
+    cf_xarray.units must not be imported yet."""
     code = """
         import sys
         import pint

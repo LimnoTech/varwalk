@@ -1,4 +1,4 @@
-"""Every function that writes ``history`` opens its lines with a mark."""
+"""Every function that writes ``history`` takes a mark for its lines."""
 
 from __future__ import annotations
 

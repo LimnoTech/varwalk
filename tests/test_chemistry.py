@@ -39,7 +39,8 @@ def test_100_umol_per_litre_nitrate_is_1_40_mg_per_litre_as_n(make):
     assert record(out, "NO3")["quantity_kind"] == "MassConcentration"
     assert out.attrs["history"].endswith(
         f"{STAMP} varwalk: convert_amount: NO3 'umol l-1' "
-        "(AmountOfSubstanceConcentration, amount) -> 'mg l-1' (MassConcentration, mass) as N, "
+        "(AmountOfSubstanceConcentration, amount) -> 'mg l-1' (MassConcentration, "
+        "mass) as N, "
         "species NO3-, x0.0140067 (year setting: julian)"
     )
 
@@ -441,7 +442,8 @@ def test_a_millimole_flux_of_calcium_is_two_milliequivalents_and_back():
     assert record(as_eq, "Ca")["counting"] == "equivalents"
     assert as_eq.attrs["history"].endswith(
         f"{STAMP} varwalk: convert_amount: Ca 'mmol m-2 d-1' (MolarFluxDensity, "
-        "amount) -> 'mmol d-1 m-2' (MolarFluxDensity, equivalents) as Ca, species Ca+2, x2 "
+        "amount) -> 'mmol d-1 m-2' (MolarFluxDensity, equivalents) as Ca, species "
+        "Ca+2, x2 "
         "(year setting: julian)"
     )
     back = convert_amount(as_eq, {"Ca": "mmol m-2 d-1"})
@@ -469,7 +471,8 @@ def test_sulfate_deposition_in_equivalents_is_positive():
 
 
 def test_keq_per_hectare_of_calcium_and_kg_per_hectare_as_calcium():
-    # a base-cation deposition published in keq/ha; it is written in kmol ha-1
+    # a base-cation deposition published in keq/ha; it is written in
+    # kmol ha-1
     data = calcium_flux("kmol ha-1", "equivalents", "AmountOfSubstancePerArea")
     as_kg = convert_amount(data, {"Ca": "kg ha-1"})
     assert values(as_kg, "Ca")[0] == pytest.approx(
@@ -529,8 +532,10 @@ def test_a_mass_amount_change_without_a_paired_kind_is_refused():
     with pytest.raises(ValueError) as err:
         convert_amount(data, {"Ca": "mmol kg-1"})
     assert str(err.value) == (
-        "'Ca' is MassFraction counted as mass; convert_amount moves mass <-> amount for "
-        "['Mass', 'MassConcentration', 'MassFlowRate', 'MassFluxDensity', 'MassPerArea', "
+        "'Ca' is MassFraction counted as mass; convert_amount moves mass <-> amount "
+        "for "
+        "['Mass', 'MassConcentration', 'MassFlowRate', 'MassFluxDensity', "
+        "'MassPerArea', "
         "'MassPerAreaTime', 'MassPerTime']"
     )
 
@@ -550,7 +555,8 @@ def test_an_equivalents_target_of_an_area_variable_suggests_its_own_unit():
     with pytest.raises(ValueError) as err:
         convert_amount(data, {"Ca": "keq ha-1"})
     assert str(err.value) == (
-        "'Ca' is already counted as equivalents; rescale it with convert_units, writing the "
+        "'Ca' is already counted as equivalents; rescale it with convert_units, "
+        "writing the "
         "target in moles (for example 'kmol ha-1'), not eq"
     )
 
@@ -570,8 +576,10 @@ def test_a_target_of_the_wrong_dimensions_names_the_variable_and_the_kind_it_wou
     with pytest.raises(ValueError) as err:
         convert_amount(data, {"N": "mmol m-2"})
     assert str(err.value) == (
-        "'N': the amount form of MassConcentration would be AmountOfSubstanceConcentration "
-        "(A1E0L-3I0M0H0T0D0), which does not match the dimensions of the target 'mmol m-2' "
+        "'N': the amount form of MassConcentration would be "
+        "AmountOfSubstanceConcentration "
+        "(A1E0L-3I0M0H0T0D0), which does not match the dimensions of the target 'mmol "
+        "m-2' "
         "(A1E0L-2I0M0H0T0D0)"
     )
 
@@ -595,7 +603,7 @@ def test_convert_basis_keeps_counting(counting):
     assert record(out, "NH4")["basis"] == "N"
 
 
-# --- the other QUDT equivalents kinds, dimensionless targets, and n != 1
+# --- the other QUDT equivalents kinds, dimensionless targets, n != 1
 
 
 def test_a_cation_exchange_capacity_converts_to_an_amount_per_mass():
@@ -645,7 +653,7 @@ def test_a_mole_fraction_counts_equivalents_in_a_dimensionless_eq_target():
     assert record(out, "Ca")["units"] == "umol mol-1"
 
 
-def test_a_dimensionless_mass_target_is_read_as_a_mass_and_refused_without_a_paired_kind():
+def test_a_dimensionless_mass_target_is_a_mass_refused_without_a_paired_kind():
     with pytest.raises(
         ValueError, match="^'Ca' is MoleFraction counted as amount; convert_amount"
     ):

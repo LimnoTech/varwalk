@@ -1,4 +1,5 @@
-"""The shipped QUDT subset (src/varwalk/data/qudt/). See docs/units.md section 6."""
+"""The shipped QUDT subset (src/varwalk/data/qudt/). See docs/units.md
+section 6."""
 
 from __future__ import annotations
 
@@ -90,8 +91,8 @@ def test_the_local_kinds_load_and_hold_amount_of_substance_per_area():
 
 
 def _shared_vector_problems(local, qudt_table):
-    """Local kinds whose vector a QUDT kind also has, unless they name that QUDT kind in
-    ``specialization_of``."""
+    """Local kinds whose vector a QUDT kind also has, unless they name
+    that QUDT kind in ``specialization_of``."""
     qudt_vectors = set(qudt_table["dimension_vector"])
     problems = []
     for name, row in local.iterrows():
@@ -120,12 +121,12 @@ def test_a_shared_vector_needs_a_specialization_of_a_qudt_kind_with_it():
     assert _shared_vector_problems(local, qudt_table) == ["Unstated", "Mismatched"]
 
 
-def test_every_local_kind_has_a_well_formed_vector_and_a_qudt_kind_only_as_its_broader_kind():
+def test_every_local_kind_has_a_well_formed_vector_and_a_qudt_broader_kind():
     local = qudt.local_kinds_table()
     for name, row in local.iterrows():
         assert VECTOR.match(row["dimension_vector"]), name
-    # a kind QUDT names differently (a wave spectrum; QUDT's only match is AreaTime) must say
-    # which QUDT kind it specializes
+    # a kind QUDT names differently (a wave spectrum; QUDT's only match
+    # is AreaTime) must say which QUDT kind it specializes
     assert _shared_vector_problems(local, qudt.quantity_kinds_table()) == []
 
 
@@ -140,9 +141,11 @@ def test_no_local_kind_is_also_a_qudt_name():
         (
             "MassConcentration,X,A0E0L-3I0M1H0T0D0,,,,False,,x",
             (
-                "local quantity kind\\(s\\) \\['MassConcentration'\\] in local_kinds.csv "
+                "local quantity kind\\(s\\) \\['MassConcentration'\\] in "
+                "local_kinds.csv "
                 "are also "
-                "QUDT quantity kinds in the shipped subset: QUDT now defines them, so remove them "
+                "QUDT quantity kinds in the shipped subset: QUDT now defines them, so "
+                "remove them "
                 "from the local vocabulary and use QUDT's"
             ),
         ),

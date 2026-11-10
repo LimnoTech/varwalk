@@ -1,17 +1,20 @@
-"""Unit conversion for secondary datasets: :func:`convert_units` and :func:`rate_to_amount`.
-docs/units.md sections 3-4.
+"""Unit conversion for secondary datasets: :func:`convert_units` and
+:func:`rate_to_amount`. docs/units.md sections 3-4.
 
-Both work on annotated variables only (``quantity_kind`` is required), on a wide table (one
-column per variable) or a Dataset, and return a new object whose ``units`` are rewritten with
-``registry.format_units`` -- explicit UDUNITS year names -- and whose ``history`` records the
-source unit, the target unit and the year setting. A chemical basis or species is never needed
-here: a change of what a value counts (mass, amount, equivalents) belongs to
-``chemistry.convert_amount``. Equivalents are stored in mol with ``counting`` ``equivalents``
-(UDUNITS has no ``eq``), so rescaling ``meq m-2 s-1`` (stored ``mmol m-2 s-1``) to
-``umol d-1 m-2`` is an ordinary conversion here, in any dimension, and ``counting`` is kept. A
-target written in ``eq`` is refused: on a variable counted as equivalents with a hint to write
-it in mol; on any other with a pointer to ``chemistry.convert_amount``, which knows the species'
-charge.
+Both work on annotated variables only (``quantity_kind`` is required),
+on a wide table (one column per variable) or a Dataset, and return a new
+object whose ``units`` are rewritten with ``registry.format_units`` --
+explicit UDUNITS year names -- and whose ``history`` records the source
+unit, the target unit and the year setting. A chemical basis or species
+is never needed here: a change of what a value counts (mass, amount,
+equivalents) belongs to ``chemistry.convert_amount``. Equivalents are
+stored in mol with ``counting`` ``equivalents`` (UDUNITS has no ``eq``),
+so rescaling ``meq m-2 s-1`` (stored ``mmol m-2 s-1``) to
+``umol d-1 m-2`` is an ordinary conversion here, in any dimension, and
+``counting`` is kept. A target written in ``eq`` is refused: on a
+variable counted as equivalents with a hint to write it in mol; on any
+other with a pointer to ``chemistry.convert_amount``, which knows the
+species' charge.
 """
 
 from __future__ import annotations
@@ -45,9 +48,9 @@ if TYPE_CHECKING:
 __all__ = ["RATE_TO_AMOUNT", "convert_units", "rate_to_amount"]
 
 #: Each rate's quantity kind and the kind of the amount it accumulates.
-#: Every pair whose amount kind exists in QUDT 3.5.2, plus ``MolarFluxDensity`` ->
-#: ``AmountOfSubstancePerArea``, a local kind (``qudt.local_kinds_table``): QUDT has no
-#: amount-per-area kind.
+#: Every pair whose amount kind exists in QUDT 3.5.2, plus
+#: ``MolarFluxDensity`` -> ``AmountOfSubstancePerArea``, a local kind
+#: (``qudt.local_kinds_table``): QUDT has no amount-per-area kind.
 RATE_TO_AMOUNT = {
     "MassPerAreaTime": "MassPerArea",
     "MassFluxDensity": "MassPerArea",
@@ -60,7 +63,8 @@ RATE_TO_AMOUNT = {
     "MolarFluxDensity": "AmountOfSubstancePerArea",
 }
 
-# offsets whose label is the period's start: start + one step is the period's end
+# offsets whose label is the period's start: start + one step is the
+# period's end
 _START_ANCHORED = re.compile(r"^\d*(?:MS|QS(?:-[A-Z]{3})?|YS(?:-[A-Z]{3})?|D|h|min|s)$")
 
 
@@ -72,31 +76,40 @@ def convert_units(
     now: datetime | None = None,
     mark: str = HISTORY_MARK,
 ) -> Any:
-    """Convert annotated variables to new units: ``targets`` maps variable name to a unit
-    string (``{"DUDP003": "kg ha-1 julian_year-1"}``) or a Unit of ``registry``.
+    """Convert annotated variables to new units: ``targets`` maps
+    variable name to a unit string
+    (``{"DUDP003": "kg ha-1 julian_year-1"}``) or a Unit of
+    ``registry``.
 
-    A Dataset converts through pint-xarray with ``registry`` passed explicitly; the converted
-    variable's encoding is cleared, since the source's packing no longer fits. A table converts
-    its column, keeping a nullable column nullable.
+    A Dataset converts through pint-xarray with ``registry`` passed
+    explicitly; the converted variable's encoding is cleared, since the
+    source's packing no longer fits. A table converts its column,
+    keeping a nullable column nullable.
 
-    Rescales within one counting in any dimension, keeping ``counting``. Refuses
-    (``ValueError``) a variable with no ``quantity_kind``; a ``counting`` that is not one of
-    ``COUNTINGS`` or conflicts with its kind; a target whose dimensions differ from the quantity
-    kind's (mass <-> amount belongs to ``chemistry.convert_amount``); a dimensionless target
-    whose numerator counts a mass where the source's counts an amount, or the reverse
-    (``mg kg-1`` -> ``mmol mol-1``: that needs the molar masses of the substance and of its
-    matrix, which no function here has; a bare ``1`` or ``percent`` counts what its kind's
-    numerator does); a source written in ``eq`` (the message gives it written in mol); a
-    target written in ``eq`` on a variable counted as equivalents (write it in mol: the
-    message gives the target so written); a target in ``eq`` on any other variable, since
-    changing what it counts needs the species' charge (use ``chemistry.convert_amount`` with
-    that target); and a pint Quantity as a target.
-    Writes ``units`` with ``format_units``, removes a ``units_iri``
-    that no longer fits (:func:`annotate.iri_fits`), converts a Dataset variable's
-    ``valid_min``, ``valid_max``, ``valid_range`` and ``actual_range`` with its values (they
-    are in the variable's units), and appends to ``history``.
+    Rescales within one counting in any dimension, keeping ``counting``.
+    Refuses (``ValueError``) a variable with no ``quantity_kind``; a
+    ``counting`` that is not one of ``COUNTINGS`` or conflicts with its
+    kind; a target whose dimensions differ from the quantity kind's
+    (mass <-> amount belongs to ``chemistry.convert_amount``); a
+    dimensionless target whose numerator counts a mass where the
+    source's counts an amount, or the reverse (``mg kg-1`` ->
+    ``mmol mol-1``: that needs the molar masses of the substance and of
+    its matrix, which no function here has; a bare ``1`` or ``percent``
+    counts what its kind's numerator does); a source written in ``eq``
+    (the message gives it written in mol); a target written in ``eq`` on
+    a variable counted as equivalents (write it in mol: the message
+    gives the target so written); a target in ``eq`` on any other
+    variable, since changing what it counts needs the species' charge
+    (use ``chemistry.convert_amount`` with that target); and a pint
+    Quantity as a target. Writes ``units`` with ``format_units``,
+    removes a ``units_iri`` that no longer fits
+    (:func:`annotate.iri_fits`), converts a Dataset variable's
+    ``valid_min``, ``valid_max``, ``valid_range`` and ``actual_range``
+    with its values (they are in the variable's units), and appends to
+    ``history``.
 
-    ``mark`` opens each ``history`` line this writes, after its timestamp.
+    ``mark`` opens each ``history`` line this writes, after its
+    timestamp.
     """
     from . import qudt
     from .annotate import (
@@ -141,7 +154,8 @@ def convert_units(
                 f"counted as {counting}" if counting else "not counted as equivalents"
             )
             raise ValueError(
-                f"{name!r} is {counted}: target {target!r}: counting it as equivalents needs "
+                f"{name!r} is {counted}: target {target!r}: counting it as equivalents "
+                f"needs "
                 f"the species' charge: use chemistry.convert_amount with {target!r}"
             )
         try:
@@ -152,14 +166,17 @@ def convert_units(
         have = dimension_vector(source, registry)
         if have != expected:
             raise ValueError(
-                f"{name!r} is {kind} ({expected}), but its units {found['units']!r} have "
+                f"{name!r} is {kind} ({expected}), but its units {found['units']!r} "
+                f"have "
                 f"dimensions {have}; fix them with units.annotate.annotate first"
             )
         actual = dimension_vector(wanted, registry)
         if actual != expected:
             raise ValueError(
-                f"{name!r} is {kind} ({expected}), but {target!r} has dimensions {actual}; "
-                "mass <-> amount needs a molar mass and belongs to chemistry.convert_amount"
+                f"{name!r} is {kind} ({expected}), but {target!r} has dimensions "
+                f"{actual}; "
+                "mass <-> amount needs a molar mass and belongs to "
+                "chemistry.convert_amount"
             )
         if expected.endswith("D1"):  # dimensionless: the numerator says what it counts
             fallback = _kind_numerator_counts(kind_row)
@@ -167,9 +184,12 @@ def convert_units(
             asked = numerator_counts(wanted) or fallback
             if had and asked and had != asked:
                 raise ValueError(
-                    f"{name!r} is {kind} in {found['units']!r}, a fraction counting {had}, but "
-                    f"target {target!r} counts {asked}: a mass fraction and a mole fraction "
-                    "differ by the molar masses of both the substance and its matrix, which "
+                    f"{name!r} is {kind} in {found['units']!r}, a fraction counting "
+                    f"{had}, but "
+                    f"target {target!r} counts {asked}: a mass fraction and a mole "
+                    f"fraction "
+                    "differ by the molar masses of both the substance and its matrix, "
+                    "which "
                     "this layer does not have, so the conversion is refused"
                 )
         written = format_units(wanted, registry)
@@ -191,7 +211,8 @@ def convert_units(
             change["units_iri"] = None
         changes[name] = change
         history.append(
-            f"convert_units: {name} {found['units']!r} -> {written!r} (year setting: {setting})"
+            f"convert_units: {name} {found['units']!r} -> {written!r} (year setting: "
+            f"{setting})"
         )
     out = updated(data, changes, values=values, history=history, now=now, mark=mark)
     validate_annotations(out, registry=registry)
@@ -235,28 +256,35 @@ def rate_to_amount(
     now: datetime | None = None,
     mark: str = HISTORY_MARK,
 ) -> Any:
-    """Multiply rates by each period's actual length, giving the amount over the period.
+    """Multiply rates by each period's actual length, giving the amount
+    over the period.
 
-    - ``period="time"`` names a coordinate (Dataset) or column or index level (table) holding
-      each period's **start**; the end is one ``freq`` step later. ``freq`` is a start-anchored
-      offset alias (``"MS"``, ``"YS"``, ``"QS"``, ``"D"``, ``"h"``). A Dataset infers it from
-      the coordinate when omitted (``xarray.infer_freq``, which needs three values); a table
-      must give it, because a long table repeats each time once per site.
-    - ``period=("startDate", "endDate")`` (a tuple or a two-item list) names each period's
-      start and end; the length is
-      end - start. a source whose periods are built from whole weekly samples has months that are not
-      calendar months and needs this form.
+    - ``period="time"`` names a coordinate (Dataset) or column or index
+      level (table) holding each period's **start**; the end is one
+      ``freq`` step later. ``freq`` is a start-anchored offset alias
+      (``"MS"``, ``"YS"``, ``"QS"``, ``"D"``, ``"h"``). A Dataset infers
+      it from the coordinate when omitted (``xarray.infer_freq``, which
+      needs three values); a table must give it, because a long table
+      repeats each time once per site.
+    - ``period=("startDate", "endDate")`` (a tuple or a two-item list)
+      names each period's start and end; the length is end - start. a
+      source whose periods are built from whole weekly samples has
+      months that are not calendar months and needs this form.
 
-    Lengths come from the time values and their calendar: February 2024 has 29 days, and a
-    cftime ``noleap`` February 28. No year constant is used. The quantity kind changes by
-    :data:`RATE_TO_AMOUNT`; ``units`` loses its per-time factor (``kg m-2 s-1`` -> ``kg m-2``).
-    A Dataset variable's ``valid_min``, ``valid_max``, ``valid_range`` and ``actual_range``
-    are removed (the factor differs per period, so no one range fits), and ``history`` says so.
-    ``counting`` is kept: a rate of equivalents accumulates to an amount of equivalents. A
-    period it cannot determine, a kind with no amount kind, and a ``counting`` that is not one
-    of ``COUNTINGS`` or conflicts with its kind raise ``ValueError``.
+    Lengths come from the time values and their calendar: February 2024
+    has 29 days, and a cftime ``noleap`` February 28. No year constant
+    is used. The quantity kind changes by :data:`RATE_TO_AMOUNT`;
+    ``units`` loses its per-time factor (``kg m-2 s-1`` -> ``kg m-2``).
+    A Dataset variable's ``valid_min``, ``valid_max``, ``valid_range``
+    and ``actual_range`` are removed (the factor differs per period, so
+    no one range fits), and ``history`` says so. ``counting`` is kept: a
+    rate of equivalents accumulates to an amount of equivalents. A
+    period it cannot determine, a kind with no amount kind, and a
+    ``counting`` that is not one of ``COUNTINGS`` or conflicts with its
+    kind raise ``ValueError``.
 
-    ``mark`` opens each ``history`` line this writes, after its timestamp.
+    ``mark`` opens each ``history`` line this writes, after its
+    timestamp.
     """
     from . import qudt
     from .annotate import validate_annotations
@@ -323,7 +351,8 @@ def rate_to_amount(
             "quantity_kind": amount_kind,
             "units_iri": None,
         }
-        # each step has its own factor, so no single range fits the new values
+        # each step has its own factor, so no single range fits the new
+        # values
         dropped = present_ranges(data, name)
         changes[name].update(dict.fromkeys(dropped))
         removed = (
@@ -342,13 +371,15 @@ def rate_to_amount(
 
 
 def _without_time(name: str, rate: pint.Unit, registry: pint.UnitRegistry) -> pint.Unit:
-    """``rate`` with its one per-time factor removed. Built from the unit's own container, so
-    the year preprocessor never re-reads a year name."""
+    """``rate`` with its one per-time factor removed. Built from the
+    unit's own container, so the year preprocessor never re-reads a year
+    name."""
     from pint.util import UnitsContainer
 
     time = registry.Unit("s").dimensionality
     kept, per_time = {}, []
-    # pint exposes no public per-unit-name powers; the container is the only faithful source
+    # pint exposes no public per-unit-name powers; the container is the
+    # only faithful source
     for unit_name, power in rate._units.items():
         if registry.Unit(UnitsContainer({unit_name: 1})).dimensionality == time:
             per_time.append(power)
@@ -360,7 +391,8 @@ def _without_time(name: str, rate: pint.Unit, registry: pint.UnitRegistry) -> pi
 
 
 def _times(data: Any, name: str) -> Any:
-    """The values of ``name`` as a DatetimeIndex or CFTimeIndex, one per row or time step."""
+    """The values of ``name`` as a DatetimeIndex or CFTimeIndex, one per
+    row or time step."""
     import pandas as pd
     import xarray as xr
 
@@ -385,8 +417,9 @@ def _times(data: Any, name: str) -> Any:
 
 
 def _require_on_boundary(starts: Any, freq: str, how: str) -> None:
-    """Every start must sit on ``freq``'s boundary; a start that does not (2024-01-15 with
-    ``"MS"``) would measure a different length than the period it labels."""
+    """Every start must sit on ``freq``'s boundary; a start that does
+    not (2024-01-15 with ``"MS"``) would measure a different length than
+    the period it labels."""
     import pandas as pd
 
     if isinstance(starts, pd.DatetimeIndex):
@@ -406,8 +439,9 @@ def _require_on_boundary(starts: Any, freq: str, how: str) -> None:
 
 
 def _period_seconds(data: Any, period: str | tuple[str, str], freq: str | None) -> Any:
-    """Each period's length in seconds (a numpy array for a table, a DataArray along the time
-    dimension for a Dataset), and a description of how it was found."""
+    """Each period's length in seconds (a numpy array for a table, a
+    DataArray along the time dimension for a Dataset), and a description
+    of how it was found."""
     import numpy as np
     import xarray as xr
 
@@ -422,24 +456,29 @@ def _period_seconds(data: Any, period: str | tuple[str, str], freq: str | None) 
         if freq is None:
             if not is_dataset(data):
                 raise ValueError(
-                    f"cannot determine the period from the table's {period!r} column, which "
+                    f"cannot determine the period from the table's {period!r} column, "
+                    f"which "
                     "repeats per site: give freq= (such as 'MS') or period=(start, end)"
                 )
             freq = xr.infer_freq(starts) if len(starts) >= 3 else None
             if freq is None:
                 raise ValueError(
-                    f"cannot determine the period length from {period!r}: give freq= or "
+                    f"cannot determine the period length from {period!r}: give freq= "
+                    f"or "
                     "period=(start, end)"
                 )
         if not _START_ANCHORED.match(freq):
             if inferred:
                 raise ValueError(
-                    f"inferred freq {freq!r} does not label each period by its start; pass "
-                    "freq= (a start-anchored alias such as 'MS', 'YS', 'QS', 'D' or 'h') or "
+                    f"inferred freq {freq!r} does not label each period by its start; "
+                    f"pass "
+                    "freq= (a start-anchored alias such as 'MS', 'YS', 'QS', 'D' or "
+                    "'h') or "
                     "period=(start, end)"
                 )
             raise ValueError(
-                f"freq {freq!r} does not label each period by its start; use a start-anchored "
+                f"freq {freq!r} does not label each period by its start; use a "
+                f"start-anchored "
                 "alias such as 'MS', 'YS', 'QS', 'D' or 'h'"
             )
         _require_on_boundary(starts, freq, how=f"{period} + 1 {freq}")

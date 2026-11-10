@@ -1,4 +1,5 @@
-"""The variable model: the data dictionary, check_udunits and describe_variables."""
+"""The variable model: the data dictionary, check_udunits and
+describe_variables."""
 
 from __future__ import annotations
 
@@ -142,8 +143,8 @@ def test_variables_of_a_dataset_reads_its_variable_attributes():
         ("μmol l-1", "μmol l-1"),
         ("cubic feet per second", None),
         ("psu", None),  # cf-units rejects it; cfunits accepted it
-        # a basis written into the unit: UDUNITS-2 parses each as other units: newton, kelvin,
-        # centiare, nano-hours, attosecond-newton
+        # a basis written into the unit: UDUNITS-2 parses each as other
+        # units: newton, kelvin, centiare, nano-hours, attosecond-newton
         ("kg-N/ha", None),
         ("kg-K/ha", None),
         ("kg-ca/ha", None),
@@ -155,8 +156,8 @@ def test_variables_of_a_dataset_reads_its_variable_attributes():
         ("kg m-2 s-1", "kg m-2 s-1"),
         ("mol-1", "mol-1"),
         ("1e-3", "1e-3"),
-        # a known limit: a basis set off by a space still reads as a newton; only an
-        # annotation's quantity_kind exposes it
+        # a known limit: a basis set off by a space still reads as a
+        # newton; only an annotation's quantity_kind exposes it
         ("mg N/L", "mg N/L"),
         ("unknown", None),
         ("", None),

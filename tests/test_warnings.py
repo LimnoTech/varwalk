@@ -1,4 +1,5 @@
-"""The annotation warnings: the classes, and a message shown once per process."""
+"""The annotation warnings: the classes, and a message shown once per
+process."""
 
 from __future__ import annotations
 
@@ -24,7 +25,8 @@ def test_the_warning_classes():
 
 
 class _Shown:
-    """Counts the warnings Python would print, under the interpreter's default filters."""
+    """Counts the warnings Python would print, under the interpreter's
+    default filters."""
 
     def __init__(self):
         self.messages: list[str] = []
@@ -35,7 +37,8 @@ class _Shown:
 
 @pytest.fixture
 def default_filters(monkeypatch):
-    """The default warning filters (as a script runs), with every printed warning counted."""
+    """The default warning filters (as a script runs), with every
+    printed warning counted."""
     shown = _Shown()
     with warnings.catch_warnings():
         warnings.resetwarnings()
@@ -92,8 +95,9 @@ def test_an_ignored_warning_is_still_shown_when_next_met_unfiltered(default_filt
 
 
 def test_a_plain_string_filter_is_matched_as_the_standard_library_does(default_filters):
-    # CPython stores some filters with plain-string fields (its own startup filter for
-    # DeprecationWarning in __main__), and compares those for equality
+    # CPython stores some filters with plain-string fields (its own
+    # startup filter for DeprecationWarning in __main__), and compares
+    # those for equality
     other = "not the message"  # a plain string, compared for equality
     warnings.filters.insert(0, ("ignore", other, AnnotationWarning, None, 0))
     warnings.filters.insert(0, ("error", None, AnnotationWarning, "elsewhere", 0))
@@ -124,8 +128,9 @@ def test_context_aware_warnings_follow_the_interpreter_flag():
 def test_under_context_aware_warnings_the_filters_in_force_are_read(
     default_filters, monkeypatch
 ):
-    # Python 3.14 with sys.flags.context_aware_warnings set: catch_warnings() keeps its filters
-    # in a context variable, read through warnings._get_filters(), not warnings.filters
+    # Python 3.14 with sys.flags.context_aware_warnings set:
+    # catch_warnings() keeps its filters in a context variable, read
+    # through warnings._get_filters(), not warnings.filters
     in_force = [("error", None, AnnotationWarning, None, 0)]
     monkeypatch.setattr(vw, "_context_aware_warnings", lambda: True)
     monkeypatch.setattr(warnings, "_get_filters", lambda: in_force, raising=False)
@@ -135,7 +140,8 @@ def test_under_context_aware_warnings_the_filters_in_force_are_read(
 def test_without_context_aware_warnings_the_module_filters_are_read(
     default_filters, monkeypatch
 ):
-    # Python 3.12 and 3.13, or 3.14 without the flag: warnings.filters is the list in force
+    # Python 3.12 and 3.13, or 3.14 without the flag: warnings.filters
+    # is the list in force
     monkeypatch.setattr(vw, "_context_aware_warnings", lambda: False)
     monkeypatch.setattr(
         warnings,

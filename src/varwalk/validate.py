@@ -1,8 +1,10 @@
-"""QUDT dimension vectors from units, and quantity-kind checks. docs/units.md sections 5-6.
+"""QUDT dimension vectors from units, and quantity-kind checks.
+docs/units.md sections 5-6.
 
-A unit string carries dimension and scale only, so a variable's quantity kind is declared, and
-:func:`check_quantity_kind` confirms the unit has that kind's dimensions. That catches a basis
-written into a unit (``g N m-2`` parses as gram * newton per m2).
+A unit string carries dimension and scale only, so a variable's quantity
+kind is declared, and :func:`check_quantity_kind` confirms the unit has
+that kind's dimensions. That catches a basis written into a unit
+(``g N m-2`` parses as gram * newton per m2).
 """
 
 from __future__ import annotations
@@ -14,7 +16,8 @@ if TYPE_CHECKING:
 
 __all__ = ["check_quantity_kind", "dimension_vector"]
 
-# pint base dimension -> QUDT dimension-vector letter, in QUDT's order (A E L I M H T, then D)
+# pint base dimension -> QUDT dimension-vector letter, in QUDT's order
+# (A E L I M H T, then D)
 _LETTERS = (
     ("[substance]", "A"),
     ("[current]", "E"),
@@ -27,10 +30,12 @@ _LETTERS = (
 
 
 def dimension_vector(units: Any, registry: pint.UnitRegistry | None = None) -> str:
-    """The QUDT dimension vector of ``units``, e.g. ``A0E0L-3I0M1H0T0D0`` for ``mg l-1``.
-    D is 1 only when every other exponent is 0. A pint Unit from any registry is accepted:
-    dimensions do not depend on the year setting, so there is nothing to refuse. Raises
-    ``ValueError`` for a non-integer exponent or a dimension QUDT has no letter for."""
+    """The QUDT dimension vector of ``units``, e.g.
+    ``A0E0L-3I0M1H0T0D0`` for ``mg l-1``. D is 1 only when every other
+    exponent is 0. A pint Unit from any registry is accepted: dimensions
+    do not depend on the year setting, so there is nothing to refuse.
+    Raises ``ValueError`` for a non-integer exponent or a dimension QUDT
+    has no letter for."""
     from .registry import get_registry, parse_unit
 
     registry = registry if registry is not None else get_registry()
@@ -55,9 +60,10 @@ def dimension_vector(units: Any, registry: pint.UnitRegistry | None = None) -> s
 def check_quantity_kind(
     units: Any, quantity_kind: str, registry: pint.UnitRegistry | None = None
 ) -> None:
-    """Raise unless ``quantity_kind`` is in the QUDT subset or the local kinds (QUDT
-    first) and ``units`` has its dimensions. ``ValueError`` for an unknown kind
-    (``qudt.UnknownTermError``) or a dimension mismatch."""
+    """Raise unless ``quantity_kind`` is in the QUDT subset or the local
+    kinds (QUDT first) and ``units`` has its dimensions. ``ValueError``
+    for an unknown kind (``qudt.UnknownTermError``) or a dimension
+    mismatch."""
     from . import qudt
 
     expected = qudt.quantity_kind(quantity_kind)["dimension_vector"]

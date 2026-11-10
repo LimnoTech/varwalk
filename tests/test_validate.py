@@ -1,4 +1,5 @@
-"""QUDT dimension vectors from pint units, and quantity-kind checks. docs/units.md section 6."""
+"""QUDT dimension vectors from pint units, and quantity-kind checks.
+docs/units.md section 6."""
 
 from __future__ import annotations
 
@@ -49,7 +50,8 @@ def test_matching_quantity_kind_passes():
 
 
 def test_basis_in_a_unit_string_is_caught():
-    # pint reads "N" as newton, so the dimensions are wrong for a mass per area
+    # pint reads "N" as newton, so the dimensions are wrong for a mass
+    # per area
     with pytest.raises(ValueError, match="MassPerArea"):
         check_quantity_kind("g N m-2", "MassPerArea")
 

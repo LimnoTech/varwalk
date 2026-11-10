@@ -1,27 +1,31 @@
-"""Annotations: what a unit string cannot carry -- quantity kind, what the value counts,
-species, basis, medium and process -- on the variables of a dataset. docs/units.md
-section 5.
+"""Annotations: what a unit string cannot carry -- quantity kind, what
+the value counts, species, basis, medium and process -- on the variables
+of a dataset. docs/units.md section 5.
 
-**Where the fields live.** A table keeps them in its ``attrs["variables"]`` records, beside
-the data-dictionary columns; a datacube keeps them as variable attributes of the same
-names. The schema in ``varwalk.variables`` carries them
-(``ANNOTATION_COLUMNS``, re-exported here as ``ANNOTATION_FIELDS``): a data dictionary always
-has those columns, ``<NA>`` where a variable is not annotated, and a record in
-``attrs["variables"]`` has a key only where the field is set. :func:`annotated_variables` is
-``variables.variables_of``.
+**Where the fields live.** A table keeps them in its
+``attrs["variables"]`` records, beside the data-dictionary columns; a
+datacube keeps them as variable attributes of the same names. The schema
+in ``varwalk.variables`` carries them (``ANNOTATION_COLUMNS``,
+re-exported here as ``ANNOTATION_FIELDS``): a data dictionary always has
+those columns, ``<NA>`` where a variable is not annotated, and a record
+in ``attrs["variables"]`` has a key only where the field is set.
+:func:`annotated_variables` is ``variables.variables_of``.
 
-**Counting.** ``counting`` says what a chemical value counts -- ``mass``, ``amount`` (moles of
-``basis``) or ``equivalents`` (moles of charge) -- which neither the unit nor the quantity kind
-can: ``mmol m-2 d-1`` and ``meq m-2 d-1`` share ``MolarFluxDensity``. It is required wherever
-``species`` is set, with no default. Equivalents are written in moles, as CF does
-(``..._expressed_as_mole_equivalent``), because UDUNITS has no ``eq``: ``meq/L`` is written
-``mmol l-1`` with ``counting`` ``equivalents``. A kind in ``EQUIVALENT_KINDS``
-(``EquivalentConcentration``, ``CationExchangeCapacity``, ...) still means equivalents:
-:func:`annotate` writes the ``counting`` it implies.
+**Counting.** ``counting`` says what a chemical value counts --
+``mass``, ``amount`` (moles of ``basis``) or ``equivalents`` (moles of
+charge) -- which neither the unit nor the quantity kind can:
+``mmol m-2 d-1`` and ``meq m-2 d-1`` share ``MolarFluxDensity``. It is
+required wherever ``species`` is set, with no default. Equivalents are
+written in moles, as CF does (``..._expressed_as_mole_equivalent``),
+because UDUNITS has no ``eq``: ``meq/L`` is written ``mmol l-1`` with
+``counting`` ``equivalents``. A kind in ``EQUIVALENT_KINDS``
+(``EquivalentConcentration``, ``CationExchangeCapacity``, ...) still
+means equivalents: :func:`annotate` writes the ``counting`` it implies.
 
-**Curated tables.** :func:`read_table` reads and validates a curated annotation table from a
-CSV file: one row per source variable, each stating the ``source_units`` it was curated for.
-:func:`annotate` takes such a table (a DataFrame indexed by ``name``) or a plain mapping.
+**Curated tables.** :func:`read_table` reads and validates a curated
+annotation table from a CSV file: one row per source variable, each
+stating the ``source_units`` it was curated for. :func:`annotate` takes
+such a table (a DataFrame indexed by ``name``) or a plain mapping.
 """
 
 from __future__ import annotations
@@ -70,31 +74,39 @@ __all__ = [
     "validate_annotations",
 ]
 
-#: The ``process`` vocabulary. It mirrors CF's ``..._due_to_wet_deposition``; it grows when a
-#: new use needs a new process.
+#: The ``process`` vocabulary. It mirrors CF's
+#: ``..._due_to_wet_deposition``; it grows when a new use needs a new
+#: process.
 PROCESSES = frozenset(
     {"wet_deposition", "dry_deposition", "total_deposition", "precipitation", "none"}
 )
 
 
 def _equivalent_hint(unit: pint.Unit, registry: pint.UnitRegistry) -> str:
-    """Why a unit written in ``eq`` is refused, with that unit written in mol."""
+    """Why a unit written in ``eq`` is refused, with that unit written
+    in mol."""
     from .dictionary import as_moles
     from .registry import format_units
 
     in_moles = format_units(as_moles(unit), registry)
-    return f"UDUNITS has no eq: write equivalents in mol with counting 'equivalents' ({in_moles!r})"
+    return (
+        "UDUNITS has no eq: write equivalents in mol with counting "
+        f"'equivalents' ({in_moles!r})"
+    )
 
 
 @functools.cache
 def read_table(path: Path) -> pd.DataFrame:
-    """Read and validate one curated annotation table, indexed by ``name``. The file is a CSV
-    with a ``name`` column, a ``quantity_kind`` column, optionally ``source_units``, and any of
-    the annotation fields and ``units`` (a blank cell is "not given"). A name the source
-    publishes in several units has a row for each, every one stating its ``source_units``.
-    Raises ``ValueError`` for a missing column, an unknown column, a name repeated with the same
-    or a blank ``source_units``. Cached by path (``read_table.cache_clear()`` forgets it), so
-    callers copy the result before changing it."""
+    """Read and validate one curated annotation table, indexed by
+    ``name``. The file is a CSV with a ``name`` column, a
+    ``quantity_kind`` column, optionally ``source_units``, and any of
+    the annotation fields and ``units`` (a blank cell is "not given"). A
+    name the source publishes in several units has a row for each, every
+    one stating its ``source_units``. Raises ``ValueError`` for a
+    missing column, an unknown column, a name repeated with the same or
+    a blank ``source_units``. Cached by path
+    (``read_table.cache_clear()`` forgets it), so callers copy the
+    result before changing it."""
     import pandas as pd
 
     table = pd.read_csv(path, dtype=str, keep_default_na=False, engine="pyarrow")
@@ -114,7 +126,8 @@ def read_table(path: Path) -> pd.DataFrame:
 
 
 def _check_rows(table: pd.DataFrame, what: str) -> None:
-    """A name appears once, or once per ``source_units``, each of its rows stating one."""
+    """A name appears once, or once per ``source_units``, each of its
+    rows stating one."""
     repeated = table.index[table.index.duplicated()]
     if not len(repeated):
         return
@@ -144,42 +157,54 @@ def annotate(
     now: datetime | None = None,
     mark: str = HISTORY_MARK,
 ) -> Any:
-    """A copy of a table or Dataset with annotation fields added, then validated.
+    """A copy of a table or Dataset with annotation fields added, then
+    validated.
 
-    ``annotations`` maps variable name to fields, or is a DataFrame indexed by name (such as
-    :func:`read_table` returns). ``mark`` opens the ``history`` line written, after its
-    timestamp. Blank and missing values are "not given".
+    ``annotations`` maps variable name to fields, or is a DataFrame
+    indexed by name (such as :func:`read_table` returns). ``mark`` opens
+    the ``history`` line written, after its timestamp. Blank and missing
+    values are "not given".
 
-    - A **DataFrame** is a curated table for a whole dataset, so its rows for variables the
-      data does not hold are skipped: a table works when only some variables were extracted. Where
-      it has ``source_units``, each variable takes the row for the unit its source published
-      (``source_units`` in a table's data dictionary; a Dataset variable's ``source_units``
-      attribute, else its ``units``), or, for a Dataset that already carries the row's
-      ``quantity_kind`` (a re-annotation, since the first one rewrote its ``units``), the row
-      whose ``units`` it already has; a variable no row fits raises ``ValueError``, so a table
-      never annotates another product or a source that changed its unit.
-    - A **mapping** names the variables the caller means, so a name absent from the data
-      raises ``ValueError`` (a typo there would otherwise annotate nothing).
+    - A **DataFrame** is a curated table for a whole dataset, so its
+      rows for variables the data does not hold are skipped: a table
+      works when only some variables were extracted. Where it has
+      ``source_units``, each variable takes the row for the unit its
+      source published (``source_units`` in a table's data dictionary; a
+      Dataset variable's ``source_units`` attribute, else its
+      ``units``), or, for a Dataset that already carries the row's
+      ``quantity_kind`` (a re-annotation, since the first one rewrote
+      its ``units``), the row whose ``units`` it already has; a variable
+      no row fits raises ``ValueError``, so a table never annotates
+      another product or a source that changed its unit.
+    - A **mapping** names the variables the caller means, so a name
+      absent from the data raises ``ValueError`` (a typo there would
+      otherwise annotate nothing).
 
-    - A field already set to a different value raises ``ValueError``: re-annotation never
-      overwrites.
-    - ``units`` is the one shared-schema field an annotation may replace, because a published
-      unit can pass UDUNITS and still be wrong (UDUNITS reads ``kg-N/ha`` as kg·newton per ha, so
-      ``check_udunits`` leaves such a ``units`` empty and the annotation sets it). It may
-      correct a unit, never relabel values: replacing a unit by another of the same
-      dimensions but a different scale raises. Each replacement is recorded in ``history``. A
-      unit set where the source had none is recorded with the source's own string: ``set
-      n_dw units 'kg ha-1' (source_units 'kg-N/ha')``. The scale guard cannot run when there
-      is no old unit or pint cannot read it; for a curated table the ``source_units`` match
-      guards instead, since a row applies only to data published in the unit it names.
-    - ``quantity_kind`` is required for every variable annotated, even by a units-only
-      correction.
-    - A variable whose ``quantity_kind`` is a kind in ``EQUIVALENT_KINDS`` (one that counts
-      equivalents by definition, such as ``EquivalentConcentration``) and has no ``counting``
-      gets ``counting`` ``equivalents``.
-    - A source's ``units`` is left as written unless the annotation supplies ``units`` (which
-      then goes through ``format_units``), so a bare ``yr`` or ``year`` stays ambiguous until
-      corrected. Curated tables should state ``units`` for every variable.
+    - A field already set to a different value raises ``ValueError``:
+      re-annotation never overwrites.
+    - ``units`` is the one shared-schema field an annotation may
+      replace, because a published unit can pass UDUNITS and still be
+      wrong (UDUNITS reads ``kg-N/ha`` as kg·newton per ha, so
+      ``check_udunits`` leaves such a ``units`` empty and the annotation
+      sets it). It may correct a unit, never relabel values: replacing a
+      unit by another of the same dimensions but a different scale
+      raises. Each replacement is recorded in ``history``. A unit set
+      where the source had none is recorded with the source's own
+      string: ``set n_dw units 'kg ha-1' (source_units 'kg-N/ha')``. The
+      scale guard cannot run when there is no old unit or pint cannot
+      read it; for a curated table the ``source_units`` match guards
+      instead, since a row applies only to data published in the unit it
+      names.
+    - ``quantity_kind`` is required for every variable annotated, even
+      by a units-only correction.
+    - A variable whose ``quantity_kind`` is a kind in
+      ``EQUIVALENT_KINDS`` (one that counts equivalents by definition,
+      such as ``EquivalentConcentration``) and has no ``counting`` gets
+      ``counting`` ``equivalents``.
+    - A source's ``units`` is left as written unless the annotation
+      supplies ``units`` (which then goes through ``format_units``), so
+      a bare ``yr`` or ``year`` stays ambiguous until corrected. Curated
+      tables should state ``units`` for every variable.
     """
     return _annotate(
         data, annotations, registry=registry, now=now, label="annotate", mark=mark
@@ -195,17 +220,19 @@ def _annotate(
     label: str,
     mark: str = HISTORY_MARK,
 ) -> Any:
-    """:func:`annotate`, with ``label`` opening its history line: ``annotate`` for a direct
-    call, or a longer one such as ``annotate from table <table>`` for a caller that annotates
-    from a curated table."""
+    """:func:`annotate`, with ``label`` opening its history line:
+    ``annotate`` for a direct call, or a longer one such as
+    ``annotate from table <table>`` for a caller that annotates from a
+    curated table."""
     import pandas as pd
 
     from .registry import format_units, get_registry, year_setting
 
     registry = registry if registry is not None else get_registry()
     if isinstance(annotations, pd.DataFrame):
-        # a curated table covers a whole dataset; a dataset may hold only some of it, and
-        # one name may have a row for each unit the source publishes it in
+        # a curated table covers a whole dataset; a dataset may hold
+        # only some of it, and one name may have a row for each unit the
+        # source publishes it in
         annotations = _rows_for(data, annotations, registry)
     wanted = _as_mapping(annotations)
     changes: dict[str, dict[str, Any]] = {}
@@ -214,7 +241,8 @@ def _annotate(
         current = fields(data, name)
         if given and "quantity_kind" not in current and "quantity_kind" not in given:
             raise ValueError(
-                f"{name}: quantity_kind is required on every annotated variable, including "
+                f"{name}: quantity_kind is required on every annotated variable, "
+                f"including "
                 "one given only a units correction"
             )
         change: dict[str, Any] = {}
@@ -234,7 +262,8 @@ def _annotate(
                 change[key] = value
             elif current[key] != value:
                 raise ValueError(
-                    f"{name!r} is already annotated {key}={current[key]!r}; refusing to "
+                    f"{name!r} is already annotated {key}={current[key]!r}; refusing "
+                    f"to "
                     f"change it to {value!r}"
                 )
         kind = change.get("quantity_kind", current.get("quantity_kind"))
@@ -258,9 +287,10 @@ def _annotate(
 
 
 class NoRowFitsError(ValueError):
-    """A curated table names a variable, and none of its rows is for the unit the source
-    published it in (``published``; ``None`` when it has none). ``listed`` is the table's
-    ``source_units`` for that name; ``found`` is ``"no row"`` or ``"more than one row"``."""
+    """A curated table names a variable, and none of its rows is for the
+    unit the source published it in (``published``; ``None`` when it has
+    none). ``listed`` is the table's ``source_units`` for that name;
+    ``found`` is ``"no row"`` or ``"more than one row"``."""
 
     def __init__(
         self, name: str, published: str | None, listed: list[str | None], found: str
@@ -272,8 +302,10 @@ class NoRowFitsError(ValueError):
             found,
         )
         super().__init__(
-            f"{name}: the source published it in {published!r}, and the annotation table has "
-            f"{found} for that (its source_units are {listed}); it is another product or "
+            f"{name}: the source published it in {published!r}, and the annotation "
+            f"table has "
+            f"{found} for that (its source_units are {listed}); it is another product "
+            f"or "
             "the source changed its unit, so the table cannot say what the values are"
         )
 
@@ -281,15 +313,18 @@ class NoRowFitsError(ValueError):
 def _rows_for(
     data: Any, table: pd.DataFrame, registry: pint.UnitRegistry
 ) -> pd.DataFrame:
-    """The rows of a curated ``table`` for the variables ``data`` holds, one per variable, and
-    without ``source_units``. Where the table has ``source_units``, a variable takes the row
-    whose ``source_units`` is the unit the source published it in (a blank one matches any). A
-    Dataset variable that already carries a row's ``quantity_kind`` also takes that row when
-    its ``units`` are the row's (a re-annotation, since a Dataset's own ``units`` is
-    rewritten); a fresh Dataset never does, because a row's ``units`` write an equivalent as a
-    mole. A table record keeps ``source_units`` verbatim, so it matches by that alone. A
-    variable that matches no row, or more than one, raises ``ValueError``: the data is another
-    product or the source changed its unit, and the table cannot say what the values are."""
+    """The rows of a curated ``table`` for the variables ``data`` holds,
+    one per variable, and without ``source_units``. Where the table has
+    ``source_units``, a variable takes the row whose ``source_units`` is
+    the unit the source published it in (a blank one matches any). A
+    Dataset variable that already carries a row's ``quantity_kind`` also
+    takes that row when its ``units`` are the row's (a re-annotation,
+    since a Dataset's own ``units`` is rewritten); a fresh Dataset never
+    does, because a row's ``units`` write an equivalent as a mole. A
+    table record keeps ``source_units`` verbatim, so it matches by that
+    alone. A variable that matches no row, or more than one, raises
+    ``ValueError``: the data is another product or the source changed
+    its unit, and the table cannot say what the values are."""
     import pandas as pd
 
     from .dictionary import is_dataset
@@ -337,7 +372,8 @@ def _rows_for(
 
 
 def _units_note(data: Any, name: str, old: str | None, new: str) -> str:
-    """The history note for an annotation that sets or replaces ``units``."""
+    """The history note for an annotation that sets or replaces
+    ``units``."""
     if old is not None:
         return f"replaced {name} units {old!r} -> {new!r}"
     published = source_units(data, name)
@@ -361,14 +397,16 @@ def _as_mapping(
         rows = {name: dict(row) for name, row in annotations.items()}
     else:
         raise ValueError(
-            f"annotations are a mapping or a DataFrame, not {type(annotations).__name__}"
+            f"annotations are a mapping or a DataFrame, not "
+            f"{type(annotations).__name__}"
         )
     out = {}
     for name, row in rows.items():
         unknown = sorted(set(row) - set(FIELDS))
         if unknown:
             raise ValueError(
-                f"unknown annotation field(s) {unknown} for {name!r}; allowed: {list(FIELDS)}"
+                f"unknown annotation field(s) {unknown} for {name!r}; allowed: "
+                f"{list(FIELDS)}"
             )
         given = {key: value for key, value in row.items() if not is_missing(value)}
         for key, value in given.items():
@@ -381,7 +419,8 @@ def _as_mapping(
 def _check_correction(
     name: str, old: str | None, new: str, registry: pint.UnitRegistry
 ) -> None:
-    """An annotation may correct a wrong unit, never relabel values with another scale."""
+    """An annotation may correct a wrong unit, never relabel values with
+    another scale."""
     from .registry import parse_unit
 
     if old is None:
@@ -389,46 +428,58 @@ def _check_correction(
     try:
         old_unit, new_unit = parse_unit(old, registry), parse_unit(new, registry)
     except ValueError:
-        return  # an unreadable old unit is what corrections are for; a bad new one fails below
+        # an unreadable old unit is what corrections are for; a bad new
+        # one fails below
+        return
     if old_unit.dimensionality != new_unit.dimensionality:
         return
     factor = registry.Quantity(1.0, old_unit).to(new_unit).magnitude
     if not math.isclose(factor, 1.0, rel_tol=1e-9):
         raise ValueError(
-            f"{name!r}: units: the values are in {old!r}, and 1 {old!r} is {factor:g} {new!r}; an "
-            "annotation corrects a unit, it does not relabel values -- use convert_units"
+            f"{name!r}: units: the values are in {old!r}, and 1 {old!r} is {factor:g} "
+            f"{new!r}; an "
+            "annotation corrects a unit, it does not relabel values -- use "
+            "convert_units"
         )
 
 
 def validate_annotations(
     data_or_variables_df: Any, *, registry: pint.UnitRegistry | None = None
 ) -> None:
-    """Check every annotated variable, and raise one ``ValueError`` listing every problem.
+    """Check every annotated variable, and raise one ``ValueError``
+    listing every problem.
 
-    Takes a table, a Dataset, or an annotated data dictionary: any DataFrame indexed by
-    ``name`` with a ``units`` or annotation column (such as :func:`annotated_variables` or
-    :func:`read_table` returns). A missing ``quantity_kind`` column is not an error of the
-    frame; each annotated variable without one is reported. A variable with no annotation
-    field is not checked.
+    Takes a table, a Dataset, or an annotated data dictionary: any
+    DataFrame indexed by ``name`` with a ``units`` or annotation column
+    (such as :func:`annotated_variables` or :func:`read_table` returns).
+    A missing ``quantity_kind`` column is not an error of the frame;
+    each annotated variable without one is reported. A variable with no
+    annotation field is not checked.
 
-    - ``quantity_kind`` is present, in the QUDT subset or the local kinds
-      (``qudt.local_kinds_table``), and not deprecated (a deprecated kind is reported with its
-      ``replaced_by``);
-    - ``units`` is present, UDUNITS-valid, and has the quantity kind's dimensions;
-    - ``units_iri``, if present, is in the subset, not deprecated, a unit of that quantity kind
-      (or of a kind it specializes; for a local kind, a unit with its dimension vector), and
-      has pint's conversion factor (:func:`iri_fits`);
-    - ``species`` and ``basis`` come together, molmass reads both, and the basis is the
-      species itself or one element of it;
-    - ``counting`` is present wherever ``species`` is (a kind in ``EQUIVALENT_KINDS`` implies
-      ``equivalents``), one of :data:`COUNTINGS`, agrees with an equivalents kind, and fits the
-      unit: ``mass`` needs mass and no amount of substance, ``amount`` and ``equivalents`` need
-      mol. A dimensionless unit is judged by its numerator (``mg kg-1`` counts a mass,
-      ``umol mol-1`` an amount), or, when that holds neither (``1``, ``percent``), by the
-      kind's numerator (``MassFraction``'s is a mass); ``equivalents`` needs a charged species;
+    - ``quantity_kind`` is present, in the QUDT subset or the local
+      kinds (``qudt.local_kinds_table``), and not deprecated (a
+      deprecated kind is reported with its ``replaced_by``);
+    - ``units`` is present, UDUNITS-valid, and has the quantity kind's
+      dimensions;
+    - ``units_iri``, if present, is in the subset, not deprecated, a
+      unit of that quantity kind (or of a kind it specializes; for a
+      local kind, a unit with its dimension vector), and has pint's
+      conversion factor (:func:`iri_fits`);
+    - ``species`` and ``basis`` come together, molmass reads both, and
+      the basis is the species itself or one element of it;
+    - ``counting`` is present wherever ``species`` is (a kind in
+      ``EQUIVALENT_KINDS`` implies ``equivalents``), one of
+      :data:`COUNTINGS`, agrees with an equivalents kind, and fits the
+      unit: ``mass`` needs mass and no amount of substance, ``amount``
+      and ``equivalents`` need mol. A dimensionless unit is judged by
+      its numerator (``mg kg-1`` counts a mass, ``umol mol-1`` an
+      amount), or, when that holds neither (``1``, ``percent``), by the
+      kind's numerator (``MassFraction``'s is a mass); ``equivalents``
+      needs a charged species;
     - ``process`` is in :data:`PROCESSES`.
 
-    ``medium`` is not checked: the ODM2 Medium vocabulary is not shipped.
+    ``medium`` is not checked: the ODM2 Medium vocabulary is not
+    shipped.
     """
     from .registry import get_registry
 
@@ -455,7 +506,8 @@ def _records(obj: Any) -> dict[str, dict[str, Any]]:
         repeated = obj.index.duplicated(keep=False)
         out = {}
         for (name, row), again in zip(obj.iterrows(), repeated, strict=True):
-            # a name with a row per published unit is reported as "name [source_units]"
+            # a name with a row per published unit is reported as "name
+            # [source_units]"
             key = f"{name} [{row['source_units']}]" if again else str(name)
             out[key] = {
                 field: row[field]
@@ -526,7 +578,8 @@ def _problems(
 
     iri = found.get("units_iri")
     if iri is not None:
-        # a counting that cannot be read is reported below, with the other counting problems
+        # a counting that cannot be read is reported below, with the
+        # other counting problems
         counting = None if counting_problem(found) else counting_of(found, name)
         out += [
             f"{name}: {p}"
@@ -570,11 +623,13 @@ def _counting_problems(
     kind_row: pd.Series | None,
     readable: bool,
 ) -> list[str]:
-    """``counting``: required wherever ``species`` is, readable (:func:`counting_problem`: in
-    :data:`COUNTINGS` and agreeing with an equivalents kind), fitting the unit, and
-    ``equivalents`` only for a charged species. A dimensional unit fits by its dimension
-    ``vector``; a dimensionless one by its numerator (``mg kg-1`` holds a mass), or by the
-    kind's numerator when the unit's holds neither a mass nor an amount (``1``, ``percent``)."""
+    """``counting``: required wherever ``species`` is, readable
+    (:func:`counting_problem`: in :data:`COUNTINGS` and agreeing with an
+    equivalents kind), fitting the unit, and ``equivalents`` only for a
+    charged species. A dimensional unit fits by its dimension
+    ``vector``; a dimensionless one by its numerator (``mg kg-1`` holds
+    a mass), or by the kind's numerator when the unit's holds neither a
+    mass nor an amount (``1``, ``percent``)."""
     from ._formula import charge
 
     species = found.get("species")
@@ -585,7 +640,8 @@ def _counting_problems(
         if species is None:
             return []
         return [
-            f"counting is required wherever species is set: one of {list(COUNTINGS)} (there is "
+            f"counting is required wherever species is set: one of {list(COUNTINGS)} "
+            f"(there is "
             "no default, so moles are never read as the wrong count)"
         ]
     out = []
@@ -619,8 +675,9 @@ def _counting_problems(
 
 
 def _kind_numerator_counts(kind_row: pd.Series | None) -> str | None:
-    """What a dimensionless kind's QUDT numerator counts (``MassFraction``: a mass;
-    ``MoleFraction``: an amount), or ``None``."""
+    """What a dimensionless kind's QUDT numerator counts
+    (``MassFraction``: a mass; ``MoleFraction``: an amount), or
+    ``None``."""
     numerator = kind_row["qkdv_numerator"] if kind_row is not None else None
     if not isinstance(numerator, str):
         return None
@@ -669,8 +726,9 @@ def _iri_problems(
         out.append(note)
     kinds = {str(k) for k in row["quantity_kinds"]}
     if kind is not None and counting == "equivalents":
-        # QUDT has equivalents units only under its equivalents kinds (MilliEQ-PER-L under
-        # EquivalentConcentration), so one fits a variable counting equivalents in its dimension
+        # QUDT has equivalents units only under its equivalents kinds
+        # (MilliEQ-PER-L under EquivalentConcentration), so one fits a
+        # variable counting equivalents in its dimension
         if not kinds & equivalent_kinds():
             out.append(
                 f"units_iri {iri} is a unit of {sorted(kinds)}, which count moles of a "
@@ -683,15 +741,18 @@ def _iri_problems(
                 expected = row["dimension_vector"]  # reported with quantity_kind
             if row["dimension_vector"] != expected:
                 out.append(
-                    f"units_iri {iri} has dimensions {row['dimension_vector']}, but {kind} has "
+                    f"units_iri {iri} has dimensions {row['dimension_vector']}, but "
+                    f"{kind} has "
                     f"{expected}"
                 )
     elif kind is not None and qudt.is_local_kind(kind):
-        # QUDT cannot list a kind it lacks, so a local kind is matched by dimension
+        # QUDT cannot list a kind it lacks, so a local kind is matched
+        # by dimension
         expected = qudt.quantity_kind(kind)["dimension_vector"]
         if row["dimension_vector"] != expected:
             out.append(
-                f"units_iri {iri} has dimensions {row['dimension_vector']}, but {kind} has "
+                f"units_iri {iri} has dimensions {row['dimension_vector']}, but {kind} "
+                f"has "
                 f"{expected}"
             )
     elif kind is not None and not kinds & _kind_and_ancestors(kind):
@@ -715,7 +776,8 @@ def _iri_problems(
         actual = registry.Quantity(value, unit).to_base_units().magnitude
         if not math.isclose(actual, expected, rel_tol=1e-6):
             out.append(
-                f"units_iri {iri} is {multiplier:g} SI units per unit, but {units!r} is "
+                f"units_iri {iri} is {multiplier:g} SI units per unit, but {units!r} "
+                f"is "
                 f"{registry.Quantity(1.0, unit).to_base_units().magnitude:g}"
             )
             break
@@ -730,16 +792,19 @@ def iri_fits(
     *,
     counting: str | None = None,
 ) -> bool:
-    """True when the QUDT unit ``iri`` describes ``units`` of quantity kind ``kind``: in the
-    subset, not deprecated, a unit of the kind (or of one it specializes; for a local kind,
-    one with its dimension vector), and with pint's conversion factor. With ``counting``
-    ``equivalents`` the unit must be one of QUDT's equivalents units (``MilliEQ-PER-L``) with the
-    kind's dimension vector, so ``MilliEQ-PER-L`` fits ``mmol l-1`` of
-    ``AmountOfSubstanceConcentration`` counted as equivalents, and ``MilliMOL-PER-L`` does not.
-    Without ``counting``, a kind in ``EQUIVALENT_KINDS`` (``EquivalentConcentration``) implies
-    it. A ``counting`` that is not one of :data:`COUNTINGS`, or conflicts with such a kind,
-    raises ``ValueError``.
-    QUDT's ``MO`` is the synodic month (29.53 d), so it never fits a ``month`` of year / 12."""
+    """True when the QUDT unit ``iri`` describes ``units`` of quantity
+    kind ``kind``: in the subset, not deprecated, a unit of the kind (or
+    of one it specializes; for a local kind, one with its dimension
+    vector), and with pint's conversion factor. With ``counting``
+    ``equivalents`` the unit must be one of QUDT's equivalents units
+    (``MilliEQ-PER-L``) with the kind's dimension vector, so
+    ``MilliEQ-PER-L`` fits ``mmol l-1`` of
+    ``AmountOfSubstanceConcentration`` counted as equivalents, and
+    ``MilliMOL-PER-L`` does not. Without ``counting``, a kind in
+    ``EQUIVALENT_KINDS`` (``EquivalentConcentration``) implies it. A
+    ``counting`` that is not one of :data:`COUNTINGS`, or conflicts with
+    such a kind, raises ``ValueError``. QUDT's ``MO`` is the synodic
+    month (29.53 d), so it never fits a ``month`` of year / 12."""
     from .registry import get_registry
 
     registry = registry if registry is not None else get_registry()
@@ -751,10 +816,11 @@ def iri_fits(
 def annotated_variables(
     data: Any, *, crosswalk_sources: Collection[str] | None = None
 ) -> pd.DataFrame:
-    """The annotated data dictionary of a table or Dataset: the shared columns
-    (``variables.VARIABLE_COLUMNS``) then the annotation fields, indexed by ``name``
-    (``variables.variables_of``, which takes ``crosswalk_sources``). The annotation columns are
-    left to :func:`validate_annotations`."""
+    """The annotated data dictionary of a table or Dataset: the shared
+    columns (``variables.VARIABLE_COLUMNS``) then the annotation fields,
+    indexed by ``name`` (``variables.variables_of``, which takes
+    ``crosswalk_sources``). The annotation columns are left to
+    :func:`validate_annotations`."""
     from .variables import variables_of
 
     return variables_of(data, crosswalk_sources=crosswalk_sources)

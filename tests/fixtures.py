@@ -15,8 +15,9 @@ STAMP = "2026-10-05T12:00:00Z"
 
 
 def table(columns: dict[str, tuple[list[float | None], str | None]]) -> pd.DataFrame:
-    """A wide table: ``{name: (values, units)}``, nullable Float64 columns, and a data
-    dictionary in ``attrs["variables"]`` as a source would attach it."""
+    """A wide table: ``{name: (values, units)}``, nullable Float64
+    columns, and a data dictionary in ``attrs["variables"]`` as a source
+    would attach it."""
     frame = pd.DataFrame(
         {
             name: pd.array(values, dtype="Float64")
@@ -38,8 +39,9 @@ def cube(
     freq: str = "MS",
     calendar: str = "standard",
 ) -> xr.Dataset:
-    """A datacube with one ``time`` dimension, ``{name: (values, units)}``, and a ``long_name``
-    on each variable."""
+    """A datacube with one ``time`` dimension,
+    ``{name: (values, units)}``, and a ``long_name`` on each variable.
+    """
     n = len(next(iter(columns.values()))[0])
     time = xr.date_range(
         start, periods=n, freq=freq, calendar=calendar, use_cftime=None
@@ -54,7 +56,8 @@ def cube(
 
 
 def record(data, name: str) -> dict:
-    """The data-dictionary record of a table variable, or the attrs of a Dataset variable."""
+    """The data-dictionary record of a table variable, or the attrs of a
+    Dataset variable."""
     if isinstance(data, xr.Dataset):
         return dict(data[name].attrs)
     return next(r for r in data.attrs["variables"] if r["name"] == name)
@@ -68,7 +71,8 @@ def values(data, name: str) -> list[float]:
 
 
 def cf_roundtrip(ds: xr.Dataset) -> xr.Dataset:
-    """``ds`` encoded and decoded as a netCDF file would be (packing, fill values, range
-    attributes), without a file: the environment has no netCDF engine."""
+    """``ds`` encoded and decoded as a netCDF file would be (packing,
+    fill values, range attributes), without a file: the environment has
+    no netCDF engine."""
     variables, attrs = xr.conventions.cf_encoder(ds.variables, ds.attrs)
     return xr.decode_cf(xr.Dataset(variables, attrs=attrs))
