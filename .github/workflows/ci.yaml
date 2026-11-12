@@ -87,9 +87,10 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@9936258fee697aff89b3fed6ca1f80a382ef694e # v0.11.3
         with:
-          # The pixi the lock was made with, inside pyproject.toml's
-          # requires-pixi (tests/test_package_section.py checks it).
-          pixi-version: v0.76.0
+          # The pixi the lock was last made or checked with;
+          # requires-pixi is its floor (tests/test_package_section.py
+          # checks it).
+          pixi-version: v0.84.2
           manifest-path: pyproject.toml
           # The lean environment: core + dev, no Jupyter stack. The
           # input is `environments`, plural: `environment` is silently
@@ -136,7 +137,9 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@9936258fee697aff89b3fed6ca1f80a382ef694e # v0.11.3
         with:
-          pixi-version: v0.76.0
+          # The pixi the lock was last made or checked with;
+          # requires-pixi is its floor.
+          pixi-version: v0.84.2
           manifest-path: pyproject.toml
           environments: pandas2
           locked: true
@@ -164,7 +167,9 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@9936258fee697aff89b3fed6ca1f80a382ef694e # v0.11.3
         with:
-          pixi-version: v0.76.0
+          # The pixi the lock was last made or checked with;
+          # requires-pixi is its floor.
+          pixi-version: v0.84.2
           manifest-path: pyproject.toml
           environments: default
           locked: true

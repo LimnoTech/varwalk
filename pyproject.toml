@@ -83,11 +83,12 @@ packages = ["src/varwalk"]
 [tool.pixi.workspace]
 channels = ["conda-forge", "nodefaults"]
 platforms = ["linux-64", "osx-arm64", "win-64"]
-# pixi-build is a preview, so pixi is pinned to the version the package
-# section was probed on; CI's setup-pixi steps pin the same version
+# pixi-build is a preview. requires-pixi is a floor, the pixi the lock
+# was last made or checked with; CI's setup-pixi steps pin that exact
+# version, and a weekly canary runs the latest pixi
 # (tests/test_package_section.py).
 preview = ["pixi-build"]
-requires-pixi = ">=0.76,<0.77"
+requires-pixi = ">=0.84.2"
 
 # Self-install as a pixi-build source package, in the implicit default
 # feature so every environment gets it.
@@ -144,16 +145,6 @@ pytest = ">=9"
 pytest-cov = "*"
 pyyaml = "*"  # tests/test_package_section.py reads pixi.lock
 ruff = "*"
-# conda-forge's libarrow 26.0.1 osx-arm64 builds (_3, _4) link
-# Homebrew's lz4 by absolute path, so pyarrow fails to import on a Mac
-# without it; 26.0.0 links @rpath. This keeps 26.0.1 out of varwalk's
-# own environments only (a feature, never the package's
-# run-constraints), on every platform: pixi 0.76's package section has
-# no per-platform tables (checked 2026-11-09). Revisit at the next
-# libarrow release (added 2026-11-09): on osx-arm64,
-# `pixi exec -s libarrow==<new> -- sh -c 'otool -L "$CONDA_PREFIX"/lib/libarrow.*.dylib | grep lz4'`;
-# `@rpath/liblz4` means drop this line and re-lock.
-libarrow = "!=26.0.1"
 
 # The oldest pandas the package supports, in its own solve.
 [tool.pixi.feature.pandas2.dependencies]

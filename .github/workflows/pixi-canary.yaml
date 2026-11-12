@@ -1,0 +1,48 @@
+name: pixi canary
+
+# Runs the lean `ci` environment with the latest pixi, weekly, so a pixi
+# release that breaks the package (pixi-build is a preview) shows up
+# before the floor moves. CI itself pins the floor version
+# (ci.yaml). This blocks nothing: a red run is a signal to probe from
+# its log, not a failure of a commit.
+#
+# GitHub disables a public repository's scheduled workflows after 60
+# days without repository activity; check the last run date at each
+# round's end.
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    name: latest pixi
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # hatch-vcs derives the version from git history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@9936258fee697aff89b3fed6ca1f80a382ef694e # v0.11.3
+        with:
+          pixi-version: latest
+          manifest-path: pyproject.toml
+          environments: ci
+          locked: true
+          cache: false
+
+      - name: Pixi version
+        run: pixi --version
+
+      - name: Tests
+        env:
+          PYTHONFAULTHANDLER: "1"
+        run: pixi run -e ci test
