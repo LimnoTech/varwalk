@@ -24,6 +24,10 @@ preview = ["pixi-build"]
 varwalk = { path = "../varwalk" }
 ```
 
+The family is tested with pixi 0.84.2 (`requires-pixi` in `pyproject.toml`
+sets the floor; any newer pixi runs). If yours is older, or a newer one
+fails, run `pixi self-update --version 0.84.2`.
+
 Or with pip, from git:
 
 ```bash

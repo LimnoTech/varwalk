@@ -83,11 +83,12 @@ packages = ["src/varwalk"]
 [tool.pixi.workspace]
 channels = ["conda-forge", "nodefaults"]
 platforms = ["linux-64", "osx-arm64", "win-64"]
-# pixi-build is a preview, so pixi is pinned to the version the package
-# section was probed on; CI's setup-pixi steps pin the same version
+# pixi-build is a preview. requires-pixi is a floor, the pixi the lock
+# was last made or checked with; CI's setup-pixi steps pin that exact
+# version, and a weekly canary runs the latest pixi
 # (tests/test_package_section.py).
 preview = ["pixi-build"]
-requires-pixi = ">=0.76,<0.77"
+requires-pixi = ">=0.84.2"
 
 # Self-install as a pixi-build source package, in the implicit default
 # feature so every environment gets it.

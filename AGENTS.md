@@ -128,9 +128,11 @@ dependency change to rewrite it.
   the locked record and fails for a requirement the mapping dropped (for
   example, when the mapping service was unreachable during the lock; lock
   again).
-- pixi is pinned (`requires-pixi = ">=0.76,<0.77"`, and `pixi-version:
-  v0.76.0` on every setup-pixi step in CI), because pixi-build is a
-  preview. Moving it is a deliberate change.
+- pixi: `requires-pixi` is a floor only (`">=0.84.2"`), CI's setup-pixi steps
+  pin that exact version (`pixi-version: v0.84.2`), and a weekly canary,
+  `.github/workflows/pixi-canary.yaml`, runs the latest pixi and blocks
+  nothing. The rules, the family-wide move and the round-end step are in
+  [Moving the family's pixi](https://github.com/LimnoTech/limno-agent-kit/blob/main/skills/packaging/python-scientific/guide.md#moving-the-familys-pixi).
 
 ## Style
 
