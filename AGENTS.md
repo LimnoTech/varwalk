@@ -9,37 +9,25 @@ this file too.
 
 ## Uses
 
-- The core guide, which every agent in the repo follows:
-  [agent-core-guide.md](https://github.com/LimnoTech/limno-agent-kit/blob/main/agent-core-guide.md).
-- Optional guides this repo selects:
-  - [agent-workflow.md](https://github.com/LimnoTech/limno-agent-kit/blob/main/guides/agent-workflow.md)
-  - [python-stack-gotchas.md](https://github.com/LimnoTech/limno-agent-kit/blob/main/guides/python-stack-gotchas.md)
-- Skills this repo uses: the
-  [packaging](https://github.com/LimnoTech/limno-agent-kit/blob/main/skills/packaging/python-scientific/guide.md)
-  skill (`python-scientific`).
-
-Turn the plugin on for this repo in the committed `.claude/settings.json`; the
-settings, and how each person installs the plugin, are in the template's
-[Uses](https://github.com/LimnoTech/limno-agent-kit/blob/main/templates/repo-AGENTS.md#uses)
-section. Agents without the plugin: read agent-core-guide.md first.
+This file is the whole guide for agents here. LimnoTech staff also follow the
+team's internal agent guide, which is not linked because it is private.
 
 ## Choices
 
-- Commit policy: `agent-commits-on-branch`. See
-  [Git and commit policy](https://github.com/LimnoTech/limno-agent-kit/blob/main/agent-core-guide.md#git-and-commit-policy).
+- Commit policy: `agent-commits-on-branch`. Work on a branch, never on `main`.
+  Create it from local `main`, or add `--no-track` when branching from a remote
+  ref, and check `git branch -vv` before handing back: no upstream, or the
+  branch's own name. Never push, merge or tag without the maintainer's say-so.
 - AI co-author trailer on commits: no.
-- Multi-step work runs in rounds with a review gate after each group, as the
-  [workflow guide](https://github.com/LimnoTech/limno-agent-kit/blob/main/guides/agent-workflow.md)
-  says: commit each group on its branch and stop for the maintainer's review.
-  Every review finding is fixed before a hand-back, Minor ones included.
+- Multi-step work pauses at gates: commit each group on its branch and stop
+  for the maintainer's review before the next group starts. Every review
+  finding is fixed before a hand-back, Minor ones included.
 
 ## Exceptions
 
-- Never tag without the maintainer's say-so: the core guide's default covers
-  push and merge, and a tag publishes a release.
 - Neutral naming: no organization name is a default in the API or the data,
   and nothing here links to a private repository, because varwalk is public.
-  Link only public pages. (The kit's links above are public.)
+  Link only public pages.
 - No routes in tracked files: no home-directory path, UNC path, `smb://` URL
   or private address (`tests/test_no_routes.py`).
 
@@ -128,11 +116,11 @@ dependency change to rewrite it.
   the locked record and fails for a requirement the mapping dropped (for
   example, when the mapping service was unreachable during the lock; lock
   again).
-- pixi: `requires-pixi` is a floor only (`">=0.84.2"`), CI's setup-pixi steps
-  pin that exact version (`pixi-version: v0.84.2`), and a weekly canary,
-  `.github/workflows/pixi-canary.yaml`, runs the latest pixi and blocks
-  nothing. The rules, the family-wide move and the round-end step are in
-  [Moving the family's pixi](https://github.com/LimnoTech/limno-agent-kit/blob/main/skills/packaging/python-scientific/guide.md#moving-the-familys-pixi).
+- pixi: `requires-pixi` is a floor only (`">=0.84.2"`), never a range. CI's
+  setup-pixi steps pin pixi `v0.84.2`, the version the lock was last made or
+  checked with, and a weekly canary, `.github/workflows/pixi-canary.yaml`,
+  runs the latest pixi and blocks nothing. Raise the floor, the CI pins and
+  the README's stated version together.
 
 ## Style
 

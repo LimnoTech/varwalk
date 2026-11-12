@@ -1,8 +1,0 @@
-{
-  "extraKnownMarketplaces": {
-    "limnotech": {
-      "source": {"source": "github", "repo": "LimnoTech/limno-agent-kit"}
-    }
-  },
-  "enabledPlugins": {"limno-agent-kit@limnotech": true}
-}
