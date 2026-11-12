@@ -9,8 +9,8 @@ this file too.
 
 ## Uses
 
-This file is the whole guide for agents here. LimnoTech staff also follow the
-team's internal agent guide, which is not linked because it is private.
+This file is the whole guide for agents here; LimnoTech staff also follow
+the team's internal guide, which is private and not linked.
 
 ## Choices
 
@@ -23,7 +23,7 @@ team's internal agent guide, which is not linked because it is private.
   for the maintainer's review before the next group starts. Every review
   finding is fixed before a hand-back, Minor ones included.
 
-## Exceptions
+## Rules for a public repo
 
 - Neutral naming: no organization name is a default in the API or the data,
   and nothing here links to a private repository, because varwalk is public.
@@ -119,8 +119,10 @@ dependency change to rewrite it.
 - pixi: `requires-pixi` is a floor only (`">=0.84.2"`), never a range. CI's
   setup-pixi steps pin pixi `v0.84.2`, the version the lock was last made or
   checked with, and a weekly canary, `.github/workflows/pixi-canary.yaml`,
-  runs the latest pixi and blocks nothing. Raise the floor, the CI pins and
-  the README's stated version together.
+  runs the latest pixi and blocks nothing. GitHub disables a public repo's
+  scheduled workflows after 60 days without activity, so check the canary's
+  last run date at each round's end. Raise the floor, the CI pins and the
+  README's stated version together.
 
 ## Style
 

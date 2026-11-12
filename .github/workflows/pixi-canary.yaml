@@ -43,4 +43,6 @@ jobs:
         run: pixi --version
 
       - name: Tests
+        env:
+          PYTHONFAULTHANDLER: "1"
         run: pixi run -e ci test

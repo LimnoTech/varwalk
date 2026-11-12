@@ -26,7 +26,10 @@ varwalk = { path = "../varwalk" }
 
 The family is tested with pixi 0.84.2 (`requires-pixi` in `pyproject.toml`
 sets the floor; any newer pixi runs). If yours is older, or a newer one
-fails, run `pixi self-update --version 0.84.2`.
+fails, run `pixi self-update --version 0.84.2`. After a `pixi update`, or
+when varwalk gets a new commit, `import varwalk` can fail with
+`ModuleNotFoundError`: pixi 0.84.2 reinstalls a source package and can lose
+its editable install. Run `pixi reinstall -e <env>` (the whole environment).
 
 Or with pip, from git:
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **pixi 0.84.2 or later is required** (`requires-pixi = ">=0.84.2"`, a
+  floor; CI pins v0.84.2 and a weekly canary runs the latest pixi).
+
 ## 0.1.0 (2026-11-09)
 
 First version of varwalk, extracted in 2026 from the units layer of
