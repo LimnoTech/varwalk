@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use varwalk, please cite it as below."
 title: varwalk
-version: 0.1.0
+version: 0.2.0
 abstract: >-
   Variable crosswalks for water and environmental data: units, quantity
   kinds, species, basis and counting, with each source's own names and

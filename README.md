@@ -34,7 +34,7 @@ its editable install. Run `pixi reinstall -e <env>` (the whole environment).
 Or with pip, from git:
 
 ```bash
-pip install "varwalk @ git+https://github.com/LimnoTech/varwalk@v0.1.0"
+pip install "varwalk @ git+https://github.com/LimnoTech/varwalk@v0.2.0"
 ```
 
 `requires-python = ">=3.12"` keeps Python 3.12 supported past
