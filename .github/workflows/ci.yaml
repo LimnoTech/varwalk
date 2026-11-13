@@ -102,6 +102,13 @@ jobs:
           # Written on `main` only (see the header comment).
           cache-write: ${{ github.ref_name == 'main' }}
 
+      - name: Rebuild the source packages
+        # On a cache hit, pixi 0.84.2 restores the environment without
+        # building the source packages, so the git-ignored _version.py
+        # their hatch-vcs build hook writes is missing from a fresh
+        # checkout (test_ci_rebuilds_the_source_packages).
+        run: pixi reinstall -e ci varwalk
+
       # Steps are kept separate so a failure names the tool that failed.
       - name: Tests
         # PYTHONFAULTHANDLER prints a native crash and the Python stack
@@ -146,6 +153,13 @@ jobs:
           cache: true
           cache-write: ${{ github.ref_name == 'main' }}
 
+      - name: Rebuild the source packages
+        # On a cache hit, pixi 0.84.2 restores the environment without
+        # building the source packages, so the git-ignored _version.py
+        # their hatch-vcs build hook writes is missing from a fresh
+        # checkout (test_ci_rebuilds_the_source_packages).
+        run: pixi reinstall -e pandas2 varwalk
+
       - name: Tests
         run: pixi run -e pandas2 test
 
@@ -175,6 +189,13 @@ jobs:
           locked: true
           cache: true
           cache-write: ${{ github.ref_name == 'main' }}
+
+      - name: Rebuild the source packages
+        # On a cache hit, pixi 0.84.2 restores the environment without
+        # building the source packages, so the git-ignored _version.py
+        # their hatch-vcs build hook writes is missing from a fresh
+        # checkout (test_ci_rebuilds_the_source_packages).
+        run: pixi reinstall -e default varwalk
 
       - name: Type check
         run: pixi run typecheck
