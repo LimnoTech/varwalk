@@ -2,8 +2,17 @@
 
 ## Unreleased
 
+## 0.2.0 (2026-11-13)
+
+No change to the API. A project that takes varwalk as a pixi source
+package needs pixi 0.84.2 or later, and its `../varwalk` checkout at this
+release; water-data-engine 0.7.0 floors varwalk at 0.2.0.
+
 - **pixi 0.84.2 or later is required** (`requires-pixi = ">=0.84.2"`, a
-  floor; CI pins v0.84.2 and a weekly canary runs the latest pixi).
+  floor; CI pins v0.84.2 and a weekly canary runs the latest pixi)
+  ([#2](https://github.com/LimnoTech/varwalk/pull/2)).
+- The dependencies are updated to their newest releases within the
+  package's pins (`pixi update`).
 
 ## 0.1.0 (2026-11-09)
 
